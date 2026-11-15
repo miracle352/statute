@@ -1,0 +1,335 @@
+{
+  "end": {
+    "type": "run_end",
+    "status": "passed",
+    "summary": "Opened the Trading page from the site navigation.\nA cookie privacy prompt appeared, with options beyond settings only.\nReloaded the Trading page.\nThe run finished on the Trading page at https://www.base.org/trading.",
+    "one_liner": "opened and reloaded the Trading page on base.org",
+    "final_state": {
+      "url": "https://www.base.org/trading",
+      "cookie_consent_banner_or_popup_present": "true",
+      "cookie_consent_only_offers_settings": "false"
+    },
+    "reason": "Objective completed",
+    "duration": 105.6,
+    "bifurcated": false,
+    "total_runs": 1,
+    "context": {
+      "memory": {
+        "cookie_consent_banner_or_popup_present": {
+          "extracted_value": "true",
+          "operator": "equals",
+          "transforms": [],
+          "json_path": null,
+          "reasoning": "value: 'true' -> 'true'; equals 'true' -> PASS",
+          "analyzer_type": "textual_visual",
+          "step": 2,
+          "query": "whether a cookie consent banner or popup is present (in the Privacy dialog)",
+          "condition": "A cookie consent banner or popup appears.",
+          "human_description": "Checking whether the cookie consent banner is present",
+          "expected_value": "true",
+          "subject": "a cookie consent banner or popup",
+          "must_be": "present",
+          "code_js": "el(267).getAttribute('role') === 'dialog' && /cookies/i.test(el(267).innerText) && getComputedStyle(el(267)).display !== 'none' && getComputedStyle(el(267)).visibility !== 'hidden'",
+          "wrapped_js": "(els) => {\n  const __m = {267: 0};\n  const el = (i) => els[__m[i]];\n  const __v = (el(267).getAttribute('role') === 'dialog' && /cookies/i.test(el(267).innerText) && getComputedStyle(el(267)).display !== 'none' && getComputedStyle(el(267)).visibility !== 'hidden');\n  return (typeof __v === 'boolean' ? String(__v) : __v);\n}",
+          "locators": [
+            "internal:role=dialog[name=\"Privacy\"i]"
+          ],
+          "needs_unit_conversion": false
+        },
+        "cookie_consent_only_offers_settings": {
+          "extracted_value": "false",
+          "operator": "equals",
+          "transforms": [],
+          "json_path": null,
+          "reasoning": "value: 'false' -> 'false'; equals 'true' -> FAIL",
+          "analyzer_type": "textual_visual",
+          "step": 2,
+          "query": "whether the cookie consent interface only offering settings is present (in the Privacy dialog)",
+          "condition": "The cookie consent interface only offers settings.",
+          "human_description": "Checking the actions offered by the cookie consent interface",
+          "expected_value": "true",
+          "subject": "the cookie consent interface only offering settings",
+          "must_be": "present",
+          "code_js": "(()=>{const labels=[...el(267).querySelectorAll('button')].map(b=>b.innerText.trim()).filter(Boolean); return labels.length === 1 && /customize|settings|preferences/i.test(labels[0]||'')})()",
+          "wrapped_js": "(els) => {\n  const __m = {267: 0};\n  const el = (i) => els[__m[i]];\n  const __v = ((()=>{const labels=[...el(267).querySelectorAll('button')].map(b=>b.innerText.trim()).filter(Boolean); return labels.length === 1 && /customize|settings|preferences/i.test(labels[0]||'')})());\n  return (typeof __v === 'boolean' ? String(__v) : __v);\n}",
+          "locators": [
+            "internal:role=dialog[name=\"Privacy\"i]"
+          ],
+          "needs_unit_conversion": false
+        }
+      },
+      "variables": {
+        "cookie_consent_banner_or_popup_present": {
+          "syntax": "{{cookie_consent_banner_or_popup_present}}",
+          "value": "true",
+          "type": "memory",
+          "secret": false
+        },
+        "cookie_consent_only_offers_settings": {
+          "syntax": "{{cookie_consent_only_offers_settings}}",
+          "value": "false",
+          "type": "memory",
+          "secret": false
+        }
+      },
+      "pointer": "(passed) opened and reloaded the Trading page on base.org"
+    },
+    "credits_consumed": 22.6718725,
+    "session_dir": "C:\\Users\\IYANUOLUWA/.testmuai/kaneai/sessions\\1162b00c-26f7-4142-9e4d-e036b696e80b",
+    "run_dir": "C:\\Users\\IYANUOLUWA/.testmuai/kaneai/sessions\\1162b00c-26f7-4142-9e4d-e036b696e80b\\runs\\0",
+    "result_code": 100,
+    "reason_code": "success.complete",
+    "per_flow_metadata": [
+      {
+        "result_code": "100",
+        "reason_code": "success.complete",
+        "error_message": null,
+        "summary": "Opened the Trading page from the site navigation.\nA cookie privacy prompt appeared, with options beyond settings only.\nReloaded the Trading page.\nThe run finished on the Trading page at https://www.base.org/trading.",
+        "one_liner": "opened and reloaded the Trading page on base.org",
+        "credits_consumed": 22.6718725
+      }
+    ],
+    "run_id": "run-0",
+    "test_url": "https://test-manager.lambdatest.com/projects/01M7E4JR87M8V8X3PY5SPEP2E6/test-cases/01M7FZJ2AEVF5BERZ546Z33WZQ/dashboard/share/US_0ETVTNQTJUD0B4PZN8ECFGCDQ10HJQKRM3NUSSJJOI35MZN1P09JS1NMG50O0MH5?type=summary&agentView=true&fqdn=summary-page",
+    "coverage": {
+      "status": "skipped"
+    },
+    "v": 1,
+    "ts": "2026-11-15T16:12:35.390Z"
+  },
+  "events": [
+    {
+      "type": "stream_start",
+      "cli_version": "0.10.4",
+      "surface": "run",
+      "pid": 10492,
+      "v": 1,
+      "ts": "2026-11-15T16:09:58.400Z"
+    },
+    {
+      "type": "recording_state",
+      "enabled": true,
+      "session_id": "1162b00c-26f7-4142-9e4d-e036b696e80b",
+      "persist": false,
+      "v": 1,
+      "ts": "2026-11-15T16:09:58.415Z"
+    },
+    {
+      "type": "bifurcation",
+      "flows": [
+        "Navigate to https://www.base.org/stocksmaxxing then If a cookie consent banner or popup appears, @v16:\"click the button that rejects or declines all non-essential cookies\"; if it only offers settings, @v16:\"open them and choose to reject all\".\nThen open one main page from the site's navigation.\nThen reload the page."
+      ],
+      "count": 1,
+      "v": 1,
+      "ts": "2026-11-15T16:10:32.993Z"
+    },
+    {
+      "step": 2,
+      "status": "running",
+      "remark": "Step 1",
+      "v": 1,
+      "ts": "2026-11-15T16:10:44.325Z"
+    },
+    {
+      "step": 2,
+      "status": "done",
+      "remark": "navigate: Navigate to https://www.base.org/stocksmaxxing",
+      "v": 1,
+      "ts": "2026-11-15T16:10:44.399Z"
+    },
+    {
+      "step": 3,
+      "status": "running",
+      "remark": "Step 2",
+      "v": 1,
+      "ts": "2026-11-15T16:10:46.717Z"
+    },
+    {
+      "step": 3,
+      "status": "done",
+      "remark": "analyze: The cookie consent interface only offers settings.",
+      "v": 1,
+      "ts": "2026-11-15T16:11:04.394Z"
+    },
+    {
+      "step": 4,
+      "status": "running",
+      "remark": "Step 3",
+      "v": 1,
+      "ts": "2026-11-15T16:11:08.034Z"
+    },
+    {
+      "step": 2,
+      "status": "running",
+      "remark": "Step 1",
+      "child_id": "21700034",
+      "v": 1,
+      "ts": "2026-11-15T16:11:11.856Z"
+    },
+    {
+      "step": 2,
+      "status": "done",
+      "remark": "click: Rejecting non-essential cookies",
+      "child_id": "21700034",
+      "v": 1,
+      "ts": "2026-11-15T16:11:21.322Z"
+    },
+    {
+      "step": 3,
+      "status": "running",
+      "remark": "Step 2",
+      "child_id": "21700034",
+      "v": 1,
+      "ts": "2026-11-15T16:11:24.414Z"
+    },
+    {
+      "step": 5,
+      "status": "running",
+      "remark": "Step 4",
+      "v": 1,
+      "ts": "2026-11-15T16:11:29.114Z"
+    },
+    {
+      "step": 5,
+      "status": "done",
+      "remark": "click: Clicking Open Solutions menu in the main navigation header",
+      "v": 1,
+      "ts": "2026-11-15T16:11:39.301Z"
+    },
+    {
+      "step": 6,
+      "status": "running",
+      "remark": "Step 5",
+      "v": 1,
+      "ts": "2026-11-15T16:11:41.919Z"
+    },
+    {
+      "step": 6,
+      "status": "done",
+      "remark": "click: Opening the Trading main page from the navigation menu",
+      "v": 1,
+      "ts": "2026-11-15T16:11:49.644Z"
+    },
+    {
+      "step": 7,
+      "status": "running",
+      "remark": "Step 6",
+      "v": 1,
+      "ts": "2026-11-15T16:12:00.599Z"
+    },
+    {
+      "step": 7,
+      "status": "done",
+      "remark": "wait: Waiting after reloading the Trading page",
+      "v": 1,
+      "ts": "2026-11-15T16:12:10.300Z"
+    },
+    {
+      "type": "coverage",
+      "status": "skipped",
+      "reason": "not_assurance_project",
+      "pack": "C:\\Users\\IYANUOLUWA\\.testmuai\\kaneai\\sessions\\1162b00c-26f7-4142-9e4d-e036b696e80b\\evidence\\948e40c0-89bb-4583-a6a1-63da91fec5bf.evidence",
+      "v": 1,
+      "ts": "2026-11-15T16:12:35.387Z"
+    },
+    {
+      "type": "run_end",
+      "status": "passed",
+      "summary": "Opened the Trading page from the site navigation.\nA cookie privacy prompt appeared, with options beyond settings only.\nReloaded the Trading page.\nThe run finished on the Trading page at https://www.base.org/trading.",
+      "one_liner": "opened and reloaded the Trading page on base.org",
+      "final_state": {
+        "url": "https://www.base.org/trading",
+        "cookie_consent_banner_or_popup_present": "true",
+        "cookie_consent_only_offers_settings": "false"
+      },
+      "reason": "Objective completed",
+      "duration": 105.6,
+      "bifurcated": false,
+      "total_runs": 1,
+      "context": {
+        "memory": {
+          "cookie_consent_banner_or_popup_present": {
+            "extracted_value": "true",
+            "operator": "equals",
+            "transforms": [],
+            "json_path": null,
+            "reasoning": "value: 'true' -> 'true'; equals 'true' -> PASS",
+            "analyzer_type": "textual_visual",
+            "step": 2,
+            "query": "whether a cookie consent banner or popup is present (in the Privacy dialog)",
+            "condition": "A cookie consent banner or popup appears.",
+            "human_description": "Checking whether the cookie consent banner is present",
+            "expected_value": "true",
+            "subject": "a cookie consent banner or popup",
+            "must_be": "present",
+            "code_js": "el(267).getAttribute('role') === 'dialog' && /cookies/i.test(el(267).innerText) && getComputedStyle(el(267)).display !== 'none' && getComputedStyle(el(267)).visibility !== 'hidden'",
+            "wrapped_js": "(els) => {\n  const __m = {267: 0};\n  const el = (i) => els[__m[i]];\n  const __v = (el(267).getAttribute('role') === 'dialog' && /cookies/i.test(el(267).innerText) && getComputedStyle(el(267)).display !== 'none' && getComputedStyle(el(267)).visibility !== 'hidden');\n  return (typeof __v === 'boolean' ? String(__v) : __v);\n}",
+            "locators": [
+              "internal:role=dialog[name=\"Privacy\"i]"
+            ],
+            "needs_unit_conversion": false
+          },
+          "cookie_consent_only_offers_settings": {
+            "extracted_value": "false",
+            "operator": "equals",
+            "transforms": [],
+            "json_path": null,
+            "reasoning": "value: 'false' -> 'false'; equals 'true' -> FAIL",
+            "analyzer_type": "textual_visual",
+            "step": 2,
+            "query": "whether the cookie consent interface only offering settings is present (in the Privacy dialog)",
+            "condition": "The cookie consent interface only offers settings.",
+            "human_description": "Checking the actions offered by the cookie consent interface",
+            "expected_value": "true",
+            "subject": "the cookie consent interface only offering settings",
+            "must_be": "present",
+            "code_js": "(()=>{const labels=[...el(267).querySelectorAll('button')].map(b=>b.innerText.trim()).filter(Boolean); return labels.length === 1 && /customize|settings|preferences/i.test(labels[0]||'')})()",
+            "wrapped_js": "(els) => {\n  const __m = {267: 0};\n  const el = (i) => els[__m[i]];\n  const __v = ((()=>{const labels=[...el(267).querySelectorAll('button')].map(b=>b.innerText.trim()).filter(Boolean); return labels.length === 1 && /customize|settings|preferences/i.test(labels[0]||'')})());\n  return (typeof __v === 'boolean' ? String(__v) : __v);\n}",
+            "locators": [
+              "internal:role=dialog[name=\"Privacy\"i]"
+            ],
+            "needs_unit_conversion": false
+          }
+        },
+        "variables": {
+          "cookie_consent_banner_or_popup_present": {
+            "syntax": "{{cookie_consent_banner_or_popup_present}}",
+            "value": "true",
+            "type": "memory",
+            "secret": false
+          },
+          "cookie_consent_only_offers_settings": {
+            "syntax": "{{cookie_consent_only_offers_settings}}",
+            "value": "false",
+            "type": "memory",
+            "secret": false
+          }
+        },
+        "pointer": "(passed) opened and reloaded the Trading page on base.org"
+      },
+      "credits_consumed": 22.6718725,
+      "session_dir": "C:\\Users\\IYANUOLUWA/.testmuai/kaneai/sessions\\1162b00c-26f7-4142-9e4d-e036b696e80b",
+      "run_dir": "C:\\Users\\IYANUOLUWA/.testmuai/kaneai/sessions\\1162b00c-26f7-4142-9e4d-e036b696e80b\\runs\\0",
+      "result_code": 100,
+      "reason_code": "success.complete",
+      "per_flow_metadata": [
+        {
+          "result_code": "100",
+          "reason_code": "success.complete",
+          "error_message": null,
+          "summary": "Opened the Trading page from the site navigation.\nA cookie privacy prompt appeared, with options beyond settings only.\nReloaded the Trading page.\nThe run finished on the Trading page at https://www.base.org/trading.",
+          "one_liner": "opened and reloaded the Trading page on base.org",
+          "credits_consumed": 22.6718725
+        }
+      ],
+      "run_id": "run-0",
+      "test_url": "https://test-manager.lambdatest.com/projects/01M7E4JR87M8V8X3PY5SPEP2E6/test-cases/01M7FZJ2AEVF5BERZ546Z33WZQ/dashboard/share/US_0ETVTNQTJUD0B4PZN8ECFGCDQ10HJQKRM3NUSSJJOI35MZN1P09JS1NMG50O0MH5?type=summary&agentView=true&fqdn=summary-page",
+      "coverage": {
+        "status": "skipped"
+      },
+      "v": 1,
+      "ts": "2026-11-15T16:12:35.390Z"
+    }
+  ],
+  "packPath": "C:\\Users\\IYANUOLUWA\\statute\\data\\audits\\05ef6d7b5816\\evidence\\consent-1794759158018.evidence"
+}

@@ -1,0 +1,93 @@
+{
+  "pack": "consent",
+  "title": "Reject means reject",
+  "rule": "When a visitor refuses cookies, no advertising or analytics tracker may load, before the choice or after it, and no visitor ID may be sent to a tracker.",
+  "laws": [
+    {
+      "ref": "ePrivacy Directive 2002/58/EC, Art. 5(3)",
+      "gist": "storing or reading non-essential data on a device needs prior consent"
+    },
+    {
+      "ref": "GDPR (EU) 2016/679, Art. 4(11) and Art. 7",
+      "gist": "consent must be freely given and as easy to withdraw as to give"
+    },
+    {
+      "ref": "California Civil Code §1798.120 (CCPA/CPRA)",
+      "gist": "consumers may opt out of the sale or sharing of their personal information"
+    }
+  ],
+  "verdict": "violation",
+  "why": "Kane recorded 5 tracker requests after the visitor clicked \"Reject\", 2 before they had chosen anything. After \"Reject\", the same visitor ID kept going out (Google Analytics client ID (_ga cookie): 546690339.1794759081; Google Analytics client ID (_ga cookie): 1754379113.1794759126).",
+  "rejectClick": {
+    "label": "Rejecting non-essential cookies",
+    "time": "2026-11-15T16:11:19.511Z"
+  },
+  "trackerRequests": [
+    {
+      "phase": "before",
+      "tracker": "googletagmanager.com",
+      "url": "https://www.googletagmanager.com/gtag/js",
+      "method": "GET",
+      "status": 200,
+      "count": 1,
+      "firstTime": "2026-11-15T16:10:35.707388+00:00",
+      "pages": [],
+      "ids": []
+    },
+    {
+      "phase": "before",
+      "tracker": "google-analytics.com",
+      "url": "https://www.google-analytics.com/g/collect",
+      "method": "POST",
+      "status": 204,
+      "count": 1,
+      "firstTime": "2026-11-15T16:10:40.027596+00:00",
+      "pages": [
+        "https://www.base.org/stocksmaxxing"
+      ],
+      "ids": [
+        "Google Analytics client ID (_ga cookie): 1716085680.1794759040"
+      ]
+    },
+    {
+      "phase": "after",
+      "tracker": "googletagmanager.com",
+      "url": "https://www.googletagmanager.com/gtag/js",
+      "method": "GET",
+      "status": 200,
+      "count": 2,
+      "firstTime": "2026-11-15T16:11:19.700140+00:00",
+      "pages": [],
+      "ids": []
+    },
+    {
+      "phase": "after",
+      "tracker": "google-analytics.com",
+      "url": "https://www.google-analytics.com/g/collect",
+      "method": "POST",
+      "status": 204,
+      "count": 3,
+      "firstTime": "2026-11-15T16:11:22.032238+00:00",
+      "pages": [
+        "https://www.base.org/stocksmaxxing",
+        "https://www.base.org/trading"
+      ],
+      "ids": [
+        "Google Analytics client ID (_ga cookie): 546690339.1794759081",
+        "Google Analytics client ID (_ga cookie): 1754379113.1794759126"
+      ]
+    }
+  ],
+  "idsAfterReject": [
+    "Google Analytics client ID (_ga cookie): 546690339.1794759081",
+    "Google Analytics client ID (_ga cookie): 1754379113.1794759126"
+  ],
+  "trackerCookies": [],
+  "bannerShown": true,
+  "totalRequests": 334,
+  "evidence": "consent-1794759158018.evidence",
+  "testUrl": "https://test-manager.lambdatest.com/projects/01M7E4JR87M8V8X3PY5SPEP2E6/test-cases/01M7FZJ2AEVF5BERZ546Z33WZQ/dashboard/share/US_0ETVTNQTJUD0B4PZN8ECFGCDQ10HJQKRM3NUSSJJOI35MZN1P09JS1NMG50O0MH5?type=summary&agentView=true&fqdn=summary-page",
+  "credits": 22.6718725,
+  "kaneStatus": "passed",
+  "kaneSummary": "Opened the Trading page from the site navigation.\nA cookie privacy prompt appeared, with options beyond settings only.\nReloaded the Trading page.\nThe run finished on the Trading page at https://www.base.org/trading."
+}

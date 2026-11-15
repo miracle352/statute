@@ -117,7 +117,7 @@ function filmstrip(list, id) {
     .join("")}`;
 }
 
-function build({ out, packs }) {
+function build({ out, packs, url = "" }) {
   const loopFile = path.join(out, "loop.json");
   let loop;
   if (fs.existsSync(loopFile)) {
@@ -131,7 +131,7 @@ function build({ out, packs }) {
       const last = JSON.parse(fs.readFileSync(f, "utf8"));
       timeline.push({ round: 1, step: "kane", pack: id, evidence: last.packPath, run: last.end && last.end.test_url, at: new Date().toISOString(), credits: last.end && last.end.credits_consumed, kaneStatus: last.end && last.end.status, kaneSummary: last.end && last.end.summary });
     }
-    loop = { pack: timeline[0] && timeline[0].pack, timeline, url: "" };
+    loop = { pack: timeline[0] && timeline[0].pack, timeline, url };
   }
   const main = packs[loop.pack] || Object.values(packs)[0];
 

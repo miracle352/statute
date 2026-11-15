@@ -72,7 +72,7 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 // When did Kane click "Reject"? Prefer the timestamped action log; fall back
 // to the progress stream (no timestamp then).
-function findReject(actions, events) {
+function findReject(actions, events, fallbackTime) {
   for (const a of actions || []) {
     if (a.type === "click" && a.status !== "failed" && REJECT_WORDS.test(actionText(a))) {
       return { label: cleanLabel(a.instruction), time: a.time ? Date.parse(a.time) : null };
@@ -81,14 +81,29 @@ function findReject(actions, events) {
   for (const e of events || []) {
     const r = typeof e.remark === "string" ? e.remark : "";
     if (e.status === "done" && /^click\b/i.test(r) && REJECT_WORDS.test(r)) {
-      return { label: cleanLabel(r), time: null };
+      return { label: cleanLabel(r), time: fallbackTime || null };
+    }
+  }
+  return null;
+}
+
+// Did Kane see a cookie banner? Kane logs its conditional check
+// ("If-else checkpoint ...: condition 'A cookie banner appears.' matched").
+function bannerSeen(actions) {
+  for (const a of actions || []) {
+    const t = `${a.instruction || ""}`;
+    if (!/(banner|cookie|consent)/i.test(t)) continue;
+    if (a.type === "if_else" || /checkpoint|condition/i.test(t)) {
+      if (/(not matched|did not match|unmatched|not met|false)/i.test(t)) return false;
+      if (/matched|met|true/i.test(t)) return true;
     }
   }
   return null;
 }
 
 function judge({ events, network }) {
-  const reject = findReject(network.actions, events);
+  const reject = findReject(network.actions, events, network.liveRejectAt);
+  const banner = bannerSeen(network.actions);
   const hits = [];
   for (const r of network.requests) {
     let u;
@@ -128,7 +143,15 @@ function judge({ events, network }) {
 
   let verdict;
   let why;
-  if (!reject) {
+  if (!reject && banner === false && network.harFiles !== 0) {
+    if (hits.length) {
+      verdict = "violation";
+      why = `No cookie banner was shown, and Kane recorded ${plural(hits.length, "tracker request")} before the visitor could choose anything. Visitors in the EU must be asked first.`;
+    } else {
+      verdict = "pass";
+      why = `No cookie banner was shown, and none was needed: Kane recorded ${plural(network.requests.length, "request")} and none went to a known tracker.`;
+    }
+  } else if (!reject) {
     verdict = "inconclusive";
     why = "Kane did not find or click a reject button, so this run cannot prove anything either way.";
   } else if (network.harFiles === 0) {
@@ -152,7 +175,7 @@ function judge({ events, network }) {
   return {
     verdict, why,
     rejectClick: reject && { label: reject.label, time: reject.time ? new Date(reject.time).toISOString() : null },
-    trackerRequests, idsAfterReject: idsAfter, trackerCookies,
+    trackerRequests, idsAfterReject: idsAfter, trackerCookies, bannerShown: banner,
     totalRequests: network.requests.length,
   };
 }

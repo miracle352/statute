@@ -1,14 +1,23 @@
 // Runs kane-cli in agent mode and returns its parsed NDJSON stream.
 const { spawn } = require("child_process");
 
-function run(objective, { headless = true, maxSteps = 25, timeout = 300, onEvent } = {}) {
+function run(objective, { headless = true, maxSteps = 25, timeout = 300, onEvent, cdpEndpoint, username, accessKey } = {}) {
   // The objective goes through the shell inside double quotes, so refuse anything
   // that could break out of them (cmd.exe and sh metacharacters).
   if (/["%^&|<>`$\\]/.test(objective)) {
     throw new Error("objective contains a character that is unsafe to pass to the shell");
   }
   let cmd = `kane-cli run "${objective}" --agent --max-steps ${Number(maxSteps)} --timeout ${Number(timeout)}`;
-  if (headless) cmd += " --headless";
+  if (cdpEndpoint) {
+    // Drive a Chrome we launched ourselves (so we can watch it live).
+    if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(cdpEndpoint)) throw new Error("bad CDP endpoint");
+    cmd += ` --cdp-endpoint ${cdpEndpoint}`;
+  } else if (headless) cmd += " --headless";
+  if (username || accessKey) {
+    // Non-interactive auth for servers and CI. Values come from the environment.
+    if (!/^[\w.@+-]+$/.test(username || "") || !/^[\w.@+-]+$/.test(accessKey || "")) throw new Error("LT_USERNAME / LT_ACCESS_KEY have unexpected characters");
+    cmd += ` --username ${username} --access-key ${accessKey}`;
+  }
 
   return new Promise((resolve, reject) => {
     // One command string with shell:true so Windows finds the kane-cli.cmd shim.

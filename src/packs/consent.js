@@ -1,13 +1,13 @@
 // Rule pack: "Reject" means reject.
 // Kane plays a visitor who refuses cookies and then shops normally. This code
-// (not an AI) reads Kane's recorded traffic and decides the verdict.
+// (not an AI) reads Kane's recorded traffic and action log and decides the verdict.
 const trackers = require("../../rules/trackers.json");
 
 const id = "consent";
 const title = "Reject means reject";
 const rule =
   "When a visitor refuses cookies, no advertising or analytics tracker may load, " +
-  "before the choice or after it, and no tracker cookie may be set.";
+  "before the choice or after it, and no visitor ID may be sent to a tracker.";
 const laws = [
   { ref: "ePrivacy Directive 2002/58/EC, Art. 5(3)", gist: "storing or reading non-essential data on a device needs prior consent" },
   { ref: "GDPR (EU) 2016/679, Art. 4(11) and Art. 7", gist: "consent must be freely given and as easy to withdraw as to give" },
@@ -16,20 +16,42 @@ const laws = [
 
 function objective(url) {
   return (
-    `Go to ${url}. If a cookie consent banner appears, click the button that rejects all cookies ` +
-    `and store that button's text as 'reject_button'. Then open the first product, add it to the cart ` +
-    `and go to the cart. Then reload the page. Store the names of all cookies in the browser as 'cookie_names'.`
+    `Go to ${url}. In the cookie banner, click the button that rejects all cookies. ` +
+    `Open the first product. Click the add to cart button. Reload the page.`
   );
 }
 
-function matchDomain(rawUrl) {
-  let u;
-  try { u = new URL(rawUrl); } catch { return null; }
+const REJECT_WORDS = /(reject|decline|refuse|deny|necessary only|only necessary|essential only)/i;
+
+function matchDomain(u) {
   const host = u.hostname.toLowerCase();
-  for (const rule of trackers.domains) {
-    const [d, ...p] = rule.split("/");
+  for (const r of trackers.domains) {
+    const [d, ...p] = r.split("/");
     const pathPrefix = p.length ? "/" + p.join("/") : "";
-    if ((host === d || host.endsWith("." + d)) && u.pathname.startsWith(pathPrefix)) return rule;
+    if ((host === d || host.endsWith("." + d)) && u.pathname.startsWith(pathPrefix)) return r;
+  }
+  return null;
+}
+
+// Visitor identifiers that trackers send in the URL. Seeing one proves the
+// visitor is being recognised, which is the whole point of the cookie.
+const ID_PARAMS = [
+  { param: "cid", name: "Google Analytics client ID (_ga cookie)", needs: "tid" },
+  { param: "fbp", name: "Meta browser ID (_fbp cookie)" },
+  { param: "_fbp", name: "Meta browser ID (_fbp cookie)" },
+  { param: "fbc", name: "Meta click ID (_fbc cookie)" },
+  { param: "gclid", name: "Google Ads click ID" },
+  { param: "uid", name: "user ID" },
+];
+
+function visitorId(u) {
+  const q = u.searchParams;
+  for (const p of ID_PARAMS) {
+    const v = q.get(p.param);
+    if (!v) continue;
+    if (p.needs && !q.get(p.needs)) continue;
+    if (p.param === "cid" && /^G-/.test(v)) continue; // GTM uses cid for the tag ID
+    return { kind: p.name, value: v };
   }
   return null;
 }
@@ -37,46 +59,92 @@ function matchDomain(rawUrl) {
 const cookieRes = trackers.cookies.map((c) => new RegExp(c));
 const isTrackerCookie = (name) => cookieRes.some((r) => r.test(name));
 
-function splitNames(v) {
-  if (Array.isArray(v)) return v.map(String);
-  if (typeof v !== "string") return [];
-  return v.split(/[\s,;]+/).map((s) => s.replace(/^["'\[]+|["'\]]+$/g, "")).filter(Boolean);
+// When did Kane click "Reject"? Prefer the timestamped action log; fall back
+// to the progress stream (no timestamp then).
+function findReject(actions, events) {
+  for (const a of actions || []) {
+    const text = `${a.instruction} ${a.intent}`;
+    if (a.type === "click" && a.status !== "failed" && REJECT_WORDS.test(text)) {
+      return { label: a.instruction, time: a.time ? Date.parse(a.time) : null };
+    }
+  }
+  for (const e of events || []) {
+    const r = typeof e.remark === "string" ? e.remark : "";
+    if (e.status === "done" && /^click\b/i.test(r) && REJECT_WORDS.test(r)) {
+      return { label: r.replace(/^click:\s*/i, ""), time: null };
+    }
+  }
+  return null;
 }
 
-function judge({ end, network }) {
-  const fs = (end && end.final_state) || {};
-  const rejectButton = fs.reject_button;
-  const trackerRequests = [];
-  const seen = new Set();
+function judge({ events, network }) {
+  const reject = findReject(network.actions, events);
+  const hits = [];
   for (const r of network.requests) {
-    const hit = matchDomain(r.url);
-    if (!hit) continue;
-    const u = new URL(r.url);
-    const key = u.hostname + u.pathname;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    trackerRequests.push({ tracker: hit, url: u.origin + u.pathname, status: r.status, time: r.time });
+    let u;
+    try { u = new URL(r.url); } catch { continue; }
+    const tracker = matchDomain(u);
+    if (!tracker) continue;
+    const t = r.time ? Date.parse(r.time) : null;
+    const phase = reject && reject.time && t ? (t >= reject.time ? "after" : "before") : "unknown";
+    const page = u.searchParams.get("dl") || u.searchParams.get("dp") || null;
+    hits.push({ tracker, url: u.origin + u.pathname, method: r.method, status: r.status, time: r.time, phase, page, id: visitorId(u) });
   }
-  const cookieNames = new Set(splitNames(fs.cookie_names));
-  for (const r of network.requests) for (const c of r.setCookies) cookieNames.add(c);
+
+  // Group identical endpoints per phase so the report stays readable.
+  const groups = new Map();
+  for (const h of hits) {
+    const key = `${h.phase}|${h.url}`;
+    const g = groups.get(key) || { ...h, count: 0, pages: new Set(), ids: new Set() };
+    g.count++;
+    if (h.page) g.pages.add(h.page);
+    if (h.id) g.ids.add(`${h.id.kind}: ${h.id.value}`);
+    groups.set(key, g);
+  }
+  const trackerRequests = [...groups.values()].map((g) => ({
+    phase: g.phase, tracker: g.tracker, url: g.url, method: g.method, status: g.status,
+    count: g.count, firstTime: g.time, pages: [...g.pages], ids: [...g.ids],
+  }));
+
+  const after = hits.filter((h) => h.phase === "after");
+  const idsAfter = [...new Set(after.filter((h) => h.id).map((h) => `${h.id.kind}: ${h.id.value}`))];
+
+  const cookieNames = new Set();
+  for (const r of network.requests) {
+    for (const c of r.setCookies || []) cookieNames.add(c);
+    for (const c of r.sentCookies || []) cookieNames.add(c);
+  }
   const trackerCookies = [...cookieNames].filter(isTrackerCookie);
 
   let verdict;
   let why;
-  if (!rejectButton) {
+  if (!reject) {
     verdict = "inconclusive";
     why = "Kane did not find or click a reject button, so this run cannot prove anything either way.";
   } else if (network.harFiles === 0) {
     verdict = "inconclusive";
     why = "The evidence pack has no network recording.";
-  } else if (trackerRequests.length || trackerCookies.length) {
+  } else if (hits.length || trackerCookies.length) {
     verdict = "violation";
-    why = `After the visitor clicked "${rejectButton}", Kane recorded ${trackerRequests.length} tracker request(s) and ${trackerCookies.length} tracker cookie(s).`;
+    const parts = [];
+    if (after.length) parts.push(`${after.length} tracker request(s) after the visitor clicked "Reject"`);
+    const before = hits.filter((h) => h.phase === "before").length;
+    if (before) parts.push(`${before} before they had chosen anything`);
+    if (!after.length && !before && hits.length) parts.push(`${hits.length} tracker request(s)`);
+    if (trackerCookies.length) parts.push(`${trackerCookies.length} tracker cookie(s)`);
+    why = `Kane recorded ${parts.join(", ")}.`;
+    if (idsAfter.length) why += ` After "Reject", the same visitor ID kept going out (${idsAfter.join("; ")}).`;
   } else {
     verdict = "pass";
-    why = `After the visitor clicked "${rejectButton}", Kane recorded ${network.requests.length} requests and none went to a known tracker.`;
+    why = `Kane clicked "${reject.label}" and recorded ${network.requests.length} requests; none went to a known tracker and no visitor ID was sent.`;
   }
-  return { verdict, why, rejectButton, trackerRequests, trackerCookies, totalRequests: network.requests.length };
+
+  return {
+    verdict, why,
+    rejectClick: reject && { label: reject.label, time: reject.time ? new Date(reject.time).toISOString() : null },
+    trackerRequests, idsAfterReject: idsAfter, trackerCookies,
+    totalRequests: network.requests.length,
+  };
 }
 
 const fixHint =
@@ -84,4 +152,4 @@ const fixHint =
   "Reject, the tags must not load at all (hiding the banner is not enough). Check the stored " +
   "choice on every page load, before any tag script is added. Keep the tags working after Accept.";
 
-module.exports = { id, title, rule, laws, objective, judge, fixHint };
+module.exports = { id, title, rule, laws, objective, judge, fixHint, matchDomain, visitorId };

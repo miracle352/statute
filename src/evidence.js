@@ -25,17 +25,54 @@ function networkFromPack(packPath) {
       const setCookies = ((h.response && h.response.headers) || [])
         .filter((x) => x.name.toLowerCase() === "set-cookie")
         .map((x) => x.value.split("=")[0].trim());
+      // Cookies the browser sent with this request: proves which cookies existed
+      // at that moment, including ones set by JavaScript (like _ga).
+      const req = h.request || {};
+      const sent = new Set(((req.cookies) || []).map((c) => c.name));
+      for (const x of req.headers || []) {
+        if (x.name.toLowerCase() !== "cookie") continue;
+        for (const part of x.value.split(";")) {
+          const n = part.split("=")[0].trim();
+          if (n) sent.add(n);
+        }
+      }
       requests.push({
         time: h.startedDateTime,
-        method: h.request && h.request.method,
-        url: h.request && h.request.url,
+        method: req.method,
+        url: req.url,
         status: h.response && h.response.status,
         setCookies,
+        sentCookies: [...sent],
       });
     }
   }
-  const screenshots = list.filter((e) => /steps\/[^/]+\/screenshot\.png$/.test(e.name)).map((e) => e.name);
-  return { requests, screenshots, harFiles: list.filter((e) => e.name.endsWith(".har")).length };
+  // Kane's own log of what it did and when (used to find the moment of a click).
+  const actions = [];
+  for (const e of list) {
+    if (!/logs\/[^/]*actions\.ndjson$/.test(e.name)) continue;
+    for (const line of zip.read(buf, e).toString("utf8").split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const a = JSON.parse(line);
+        actions.push({
+          type: a.action_type,
+          instruction: a.action_instruction || "",
+          intent: a.intent || "",
+          status: a.status,
+          time: a.timestamp,
+        });
+      } catch { /* skip */ }
+    }
+  }
+  // Shareable Kane run link, if the pack carries one.
+  let shareLink = null;
+  const result = list.find((e) => /result\.yaml$/.test(e.name));
+  if (result) {
+    const m = zip.read(buf, result).toString("utf8").match(/sharable_link:\s*(\S+)/);
+    if (m) shareLink = m[1];
+  }
+  const screenshots = list.filter((e) => /steps\/[^/]+\/screenshot\.(png|jpg)$/.test(e.name)).map((e) => e.name);
+  return { requests, actions, shareLink, screenshots, harFiles: list.filter((e) => e.name.endsWith(".har")).length };
 }
 
 module.exports = { newestPack, networkFromPack };

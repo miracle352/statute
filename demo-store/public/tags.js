@@ -1,7 +1,4 @@
-// Analytics and ads tags.
-// BUG (on purpose): these load on every page, before the visitor has chosen
-// anything, and keep loading after they click "Reject all". The consent
-// banner only records the choice; nothing here reads it.
+// Analytics (GA4) and ads (Meta pixel), included on every page via <head>.
 (function () {
   var ga = document.createElement("script");
   ga.async = true;

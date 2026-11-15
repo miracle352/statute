@@ -59,19 +59,29 @@ function visitorId(u) {
 const cookieRes = trackers.cookies.map((c) => new RegExp(c));
 const isTrackerCookie = (name) => cookieRes.some((r) => r.test(name));
 
+// "click: Clicking Reject all in the cookie banner" -> "Reject all in the cookie banner"
+const cleanLabel = (s) => String(s || "").replace(/^click:\s*/i, "").replace(/^(clicking|clicked|click)\s+(on\s+)?(the\s+)?/i, "").trim().replace(/^"(.*)"$/, "$1");
+// What Kane actually clicked: its own description plus the element's visible
+// text. Kane's "intent" also carries the objective sentence it is working on,
+// which can lag behind, so only the text="..." part of it is used.
+function actionText(a) {
+  const m = String(a.intent || "").match(/text="([^"]*)"/);
+  return `${a.instruction || ""} ${m ? m[1] : ""}`.trim();
+}
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
 // When did Kane click "Reject"? Prefer the timestamped action log; fall back
 // to the progress stream (no timestamp then).
 function findReject(actions, events) {
   for (const a of actions || []) {
-    const text = `${a.instruction} ${a.intent}`;
-    if (a.type === "click" && a.status !== "failed" && REJECT_WORDS.test(text)) {
-      return { label: a.instruction, time: a.time ? Date.parse(a.time) : null };
+    if (a.type === "click" && a.status !== "failed" && REJECT_WORDS.test(actionText(a))) {
+      return { label: cleanLabel(a.instruction), time: a.time ? Date.parse(a.time) : null };
     }
   }
   for (const e of events || []) {
     const r = typeof e.remark === "string" ? e.remark : "";
     if (e.status === "done" && /^click\b/i.test(r) && REJECT_WORDS.test(r)) {
-      return { label: r.replace(/^click:\s*/i, ""), time: null };
+      return { label: cleanLabel(r), time: null };
     }
   }
   return null;
@@ -127,16 +137,16 @@ function judge({ events, network }) {
   } else if (hits.length || trackerCookies.length) {
     verdict = "violation";
     const parts = [];
-    if (after.length) parts.push(`${after.length} tracker request(s) after the visitor clicked "Reject"`);
+    if (after.length) parts.push(`${plural(after.length, "tracker request")} after the visitor clicked "Reject"`);
     const before = hits.filter((h) => h.phase === "before").length;
     if (before) parts.push(`${before} before they had chosen anything`);
-    if (!after.length && !before && hits.length) parts.push(`${hits.length} tracker request(s)`);
-    if (trackerCookies.length) parts.push(`${trackerCookies.length} tracker cookie(s)`);
+    if (!after.length && !before && hits.length) parts.push(plural(hits.length, "tracker request"));
+    if (trackerCookies.length) parts.push(plural(trackerCookies.length, "tracker cookie"));
     why = `Kane recorded ${parts.join(", ")}.`;
     if (idsAfter.length) why += ` After "Reject", the same visitor ID kept going out (${idsAfter.join("; ")}).`;
   } else {
     verdict = "pass";
-    why = `Kane clicked "${reject.label}" and recorded ${network.requests.length} requests; none went to a known tracker and no visitor ID was sent.`;
+    why = `Kane refused cookies and recorded ${plural(network.requests.length, "request")}; none went to a known tracker and no visitor ID was sent.`;
   }
 
   return {
@@ -152,4 +162,4 @@ const fixHint =
   "Reject, the tags must not load at all (hiding the banner is not enough). Check the stored " +
   "choice on every page load, before any tag script is added. Keep the tags working after Accept.";
 
-module.exports = { id, title, rule, laws, objective, judge, fixHint, matchDomain, visitorId };
+module.exports = { id, title, rule, laws, objective, judge, fixHint, matchDomain, visitorId, cleanLabel, actionText };

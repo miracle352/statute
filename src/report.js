@@ -29,6 +29,14 @@ function write(outDir, pack, result, meta) {
     }
     lines.push("");
   }
+  if (result.signup) {
+    lines.push(`## Subscribing: ${result.signup.length} click${result.signup.length === 1 ? "" : "s"}`, "");
+    result.signup.forEach((x, i) => lines.push(`${i + 1}. ${x}`));
+    lines.push("", `## Cancelling: ${result.cancel.length} step${result.cancel.length === 1 ? "" : "s"}${result.confirmed ? ", confirmed" : ", never confirmed"}`, "");
+    result.cancel.forEach((x, i) => lines.push(`${i + 1}. ${x}`));
+    if (result.kaneReason) lines.push("", `Kane stopped because: ${result.kaneReason}`);
+    lines.push("");
+  }
   if ((result.trackerCookies || []).length) {
     lines.push("## Tracker cookies present", "", result.trackerCookies.map((c) => `\`${c}\``).join(", "), "");
   }

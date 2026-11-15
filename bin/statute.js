@@ -4,6 +4,7 @@
 //   statute check consent --url <url> [--start "<cmd>"] [--show]
 //   statute judge consent                       re-judge the last run, no credits
 //   statute fix consent --url <url> --start "<cmd>" --app <dir> [--rounds 3]
+//   statute report                              rebuild statute-report/index.html
 //   statute reset-demo                          put the demo store's bugs back
 const fs = require("fs");
 const path = require("path");
@@ -12,10 +13,12 @@ const evidence = require("../src/evidence");
 const report = require("../src/report");
 const app = require("../src/app");
 const agent = require("../src/agent");
+const page = require("../src/page");
 
 const PACKS = {
   consent: require("../src/packs/consent"),
   "consent-accept": require("../src/packs/consent-accept"),
+  cancel: require("../src/packs/cancel"),
 };
 const ROOT = path.resolve(__dirname, "..");
 
@@ -79,10 +82,14 @@ function judgeAndReport(pack, { end, events, packPath, out }) {
   console.log(`\n${result.verdict.toUpperCase()}: ${result.why}`);
   for (const r of result.trackerRequests || []) console.log(`  · ${when[r.phase]}: ${r.tracker}  ${r.url}  ×${r.count}`);
   for (const i of result.idsAfterReject || []) console.log(`  · visitor ID sent after Reject: ${i}`);
+  if (result.signup) {
+    console.log(`  · subscribe (${result.signup.length}): ${result.signup.join(" → ")}`);
+    console.log(`  · cancel (${result.cancel.length}): ${result.cancel.join(" → ") || "(nothing)"}`);
+  }
   const credits = end && end.credits_consumed != null ? Number(end.credits_consumed) : 0;
   if (credits) console.log(`Credits used: ${credits.toFixed(1)}`);
   console.log(`Report: ${file}`);
-  return { result, file, credits, testUrl: (end && end.test_url) || network.shareLink };
+  return { result, file, credits, packPath, kaneStatus: end && end.status, kaneSummary: end && end.summary, testUrl: (end && end.test_url) || network.shareLink };
 }
 
 // The closed loop: Kane finds it, the agent fixes it, Kane proves it.
@@ -96,7 +103,7 @@ async function fixLoop(pack, opts) {
   for (let round = 1; round <= rounds; round++) {
     const r = await check(pack, opts);
     spent += r.credits;
-    timeline.push({ round, step: "kane", pack: pack.id, verdict: r.result.verdict, why: r.result.why, run: r.testUrl, at: new Date().toISOString() });
+    timeline.push({ round, step: "kane", pack: pack.id, verdict: r.result.verdict, why: r.result.why, run: r.testUrl, evidence: r.packPath, credits: r.credits, kaneStatus: r.kaneStatus, kaneSummary: r.kaneSummary, at: new Date().toISOString() });
     save();
     if (r.result.verdict === "inconclusive") {
       console.log("\nKane's run could not prove anything either way, so the loop stops here instead of guessing.");
@@ -108,7 +115,7 @@ async function fixLoop(pack, opts) {
       if (guard) {
         const g = await check(guard, opts);
         spent += g.credits;
-        timeline.push({ round, step: "kane", pack: guard.id, verdict: g.result.verdict, why: g.result.why, run: g.testUrl, at: new Date().toISOString() });
+        timeline.push({ round, step: "kane", pack: guard.id, verdict: g.result.verdict, why: g.result.why, run: g.testUrl, evidence: g.packPath, credits: g.credits, kaneStatus: g.kaneStatus, kaneSummary: g.kaneSummary, at: new Date().toISOString() });
         save();
         if (g.result.verdict !== "pass") {
           if (round === rounds) break;
@@ -148,6 +155,8 @@ function writeTimeline(out, pack, timeline, spent, fixed) {
   }
   L.push("", `Credits used: ${spent.toFixed(1)}`, "");
   fs.writeFileSync(path.join(out, "loop.md"), "\ufeff" + L.join("\n"));
+  const html = page.build({ out, packs: PACKS });
+  console.log(`Case file: ${html}`);
 }
 
 function resetDemo() {
@@ -161,18 +170,24 @@ function resetDemo() {
     }
   };
   copy(src, dst);
-  console.log("Demo store reset: the consent bug is back.");
+  console.log("Demo store reset: its compliance bugs are back.");
 }
 
 async function main() {
   const [cmd, packId] = process.argv.slice(2);
   if (cmd === "reset-demo") return resetDemo();
+  if (cmd === "report") {
+    const html = page.build({ out: path.resolve(arg("out", "statute-report")), packs: PACKS });
+    console.log(`Case file: ${html}`);
+    return;
+  }
   const pack = PACKS[packId];
   const usage =
     "usage:\n" +
     "  statute check <pack> --url <url> [--start \"<cmd>\"] [--show]\n" +
     "  statute judge <pack>                     re-judge the last run, no credits\n" +
     "  statute fix <pack> --url <url> --start \"<cmd>\" --app <dir> [--rounds 3]\n" +
+    "  statute report                           rebuild the case file (statute-report/index.html)\n" +
     "  statute reset-demo\n" +
     `packs: ${Object.keys(PACKS).join(", ")}`;
   if (!["check", "judge", "fix"].includes(cmd) || !pack) { console.error(usage); process.exit(2); }
@@ -192,10 +207,13 @@ async function main() {
   }
   if (!opts.url || opts.url === true) { console.error("--url is required\n\n" + usage); process.exit(2); }
   if (cmd === "check") {
+    fs.rmSync(path.join(out, "loop.json"), { force: true });
     const r = await check(pack, opts);
+    console.log(`Case file: ${page.build({ out, packs: PACKS })}`);
     process.exit(r.result.verdict === "pass" ? 0 : r.result.verdict === "violation" ? 1 : 3);
   }
   if (!start) { console.error("fix needs --start \"<command that runs your app>\" so Statute can restart it after each change"); process.exit(2); }
+  fs.rmSync(path.join(out, "loop.json"), { force: true });
   process.exit(await fixLoop(pack, opts));
 }
 

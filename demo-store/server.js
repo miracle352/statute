@@ -58,24 +58,19 @@ const routes = {
     page("Subscribe", `<h1>Lumen Plus</h1><p>€9.00 / month, renews automatically.</p>
 <a class="btn" href="/account?plan=plus">Start subscription</a>`),
 
-  // Cancelling is buried behind several screens (cancel-symmetry bug).
+  // Cancelling online: cancel button on the account page, one confirmation, done.
   "/account": () =>
     page("Account", `<h1>Your account</h1><p>Plan: Lumen Plus</p>
-<a href="/account/settings">Settings</a>`),
+<a class="btn" href="/account/cancel">Cancel subscription</a> <a href="/account/settings">Settings</a>`),
   "/account/settings": () =>
     page("Settings", `<h1>Settings</h1><a href="/account/settings/billing">Billing &amp; plan</a>`),
   "/account/settings/billing": () =>
-    page("Billing", `<h1>Billing &amp; plan</h1><a href="/account/cancel/1">Manage plan</a>`),
-  "/account/cancel/1": () =>
-    page("Before you go", `<h1>Are you sure?</h1><p>You will lose free bulbs for life.</p>
-<a class="btn" href="/">Keep my plan</a> <a href="/account/cancel/2">Continue</a>`),
-  "/account/cancel/2": () =>
-    page("Tell us why", `<h1>Why are you leaving?</h1>
-<label><input type="radio" name="r"> Too expensive</label>
-<label><input type="radio" name="r"> Not using it</label>
-<a href="/account/cancel/3">Next</a>`),
-  "/account/cancel/3": () =>
-    page("Cancel", `<h1>To cancel, call us</h1><p>Our team is available Mon–Fri, 9:00–17:00 CET.</p>`),
+    page("Billing", `<h1>Billing &amp; plan</h1><a class="btn" href="/account/cancel">Cancel subscription</a>`),
+  "/account/cancel": () =>
+    page("Cancel subscription", `<h1>Cancel Lumen Plus?</h1><p>Your plan will not renew.</p>
+<a class="btn" href="/account/cancelled">Confirm cancellation</a> <a href="/account">Keep my plan</a>`),
+  "/account/cancelled": () =>
+    page("Subscription cancelled", `<h1>Your subscription is cancelled</h1><p>Lumen Plus will not renew. No further charges.</p>`),
 };
 
 const TYPES = { ".js": "text/javascript", ".css": "text/css" };

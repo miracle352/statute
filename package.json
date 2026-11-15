@@ -9,7 +9,8 @@
     "store": "node demo-store/server.js",
     "check:consent": "node bin/statute.js check consent --url http://localhost:4173 --start \"node demo-store/server.js\"",
     "demo:fix": "node bin/statute.js fix consent --url http://localhost:4173 --start \"node demo-store/server.js\" --app demo-store",
-    "demo:reset": "node bin/statute.js reset-demo"
+    "demo:reset": "node bin/statute.js reset-demo",
+    "demo:fix-cancel": "node bin/statute.js fix cancel --url http://localhost:4173 --start \"node demo-store/server.js\" --app demo-store"
   },
   "engines": {
     "node": ">=18"

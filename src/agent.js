@@ -11,6 +11,7 @@ function prompt({ pack, reportMd, appDir }) {
     "- Make the smallest change that fixes the root cause. Do not delete analytics or ads entirely:",
     "  after the visitor clicks Accept, the tags must still load.",
     "- The check runs in a fresh browser with no cookies, so behaviour on first visit matters.",
+    "- You may run `node --check <file>` to syntax-check JavaScript you changed.",
     "- When you are done, reply with two short lines: what was wrong, what you changed.",
     "",
     `App folder: ${appDir}`,
@@ -24,7 +25,7 @@ function prompt({ pack, reportMd, appDir }) {
 // Runs `claude -p` with the prompt on stdin. Returns Claude's final text.
 function fix({ pack, reportMd, appDir, onLine }) {
   return new Promise((resolve, reject) => {
-    const cmd = "claude -p --permission-mode acceptEdits --allowedTools Read,Edit,Write,Glob,Grep";
+    const cmd = "claude -p --permission-mode acceptEdits --allowedTools Read,Edit,Write,Glob,Grep \"Bash(node --check:*)\"";
     const child = spawn(cmd, { cwd: appDir, shell: true, stdio: ["pipe", "pipe", "pipe"] });
     let out = "";
     let err = "";

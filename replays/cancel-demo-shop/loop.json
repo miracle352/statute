@@ -1,0 +1,30 @@
+{
+  "pack": "cancel",
+  "url": "http://localhost:4173/",
+  "app": "demo-store",
+  "strict": true,
+  "title": "Lumen demo shop: Kane subscribes in two clicks but cannot cancel online; Claude Code adds a cancel button; Kane proves cancelling is as easy as signing up",
+  "timeline": [
+    {
+      "round": 1,
+      "step": "kane",
+      "pack": "cancel",
+      "evidence": "evidence/cancel-1794754943192.evidence",
+      "at": "2026-11-15T15:02:23.000Z"
+    },
+    {
+      "round": 1,
+      "step": "agent",
+      "agent": "claude-code",
+      "summary": "Claude Code replaced the phone-only cancellation path with a cancel button on the account page and a single confirmation (the change is in demo-store/server.js after npm run demo:fix-cancel).",
+      "at": "2026-11-15T15:03:23.000Z"
+    },
+    {
+      "round": 2,
+      "step": "kane",
+      "pack": "cancel",
+      "evidence": "evidence/cancel-1794755110410.evidence",
+      "at": "2026-11-15T15:05:10.000Z"
+    }
+  ]
+}

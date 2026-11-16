@@ -35,7 +35,8 @@
     el.setAttribute("aria-label", el.textContent.trim());
     el.innerHTML = words.map((w, i) => `<span class="w" aria-hidden="true" style="--i:${i}">${esc(w)}</span>`).join(" ");
   });
-  $$(".reveal, [data-split], .stats-art").forEach((el) => revealer.observe(el));
+  $$(".hero .reveal, .hero [data-split]").forEach((el, i) => setTimeout(() => el.classList.add("in"), 80 + i * 90));
+  $$(".reveal, [data-split], .stats-art").forEach((el) => { if (!el.closest(".hero")) revealer.observe(el); });
   if (reduce) $$(".reveal, [data-split]").forEach((el) => el.classList.add("in"));
 
   // rolling digits: each digit is a column of 0-9 that slides into place
@@ -73,7 +74,11 @@
     const cv = $("#terrain"); if (!cv) return;
     const ctx = cv.getContext("2d");
     let W = 0, H = 0, dpr = 1, raf = 0, t = 0, visible = true;
-    const size = () => { dpr = Math.min(devicePixelRatio || 1, 2); W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    let formBottom = 0;
+    const size = () => {
+      dpr = Math.min(devicePixelRatio || 1, 2); W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const f = $("#auditForm"); formBottom = f ? f.getBoundingClientRect().bottom - cv.getBoundingClientRect().top : 0;
+    };
     const COLS = innerWidth < 700 ? 110 : 220, ROWS = innerWidth < 700 ? 42 : 64;
     function height(x, z, t) {
       return Math.sin(x * 2.1 + t * .5) * .45 + Math.sin(z * 3.3 - t * .35) * .35 + Math.sin((x + z) * 5.2 + t * .8) * .12 + Math.cos(x * 7 - z * 2 + t) * .05;
@@ -81,7 +86,7 @@
     function frame() {
       ctx.clearRect(0, 0, W, H);
       ctx.globalCompositeOperation = "lighter";
-      const top = H * (W < 700 ? .8 : .7);
+      const top = Math.min(H * .9, Math.max(H * (W < 700 ? .72 : .62), formBottom + 24));
       for (let r = 0; r < ROWS; r++) {
         const k = r / (ROWS - 1);               // 0 = far (top), 1 = near (bottom)
         const yRow = top + Math.pow(k, 1.55) * (H - top + 40);

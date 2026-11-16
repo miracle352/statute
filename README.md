@@ -17,7 +17,7 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | 2 min | Run it yourself with no Kane credits and no login | `git clone https://github.com/miracle352/statute && cd statute && npm run demo` |
 | 10 min | Run the whole loop on your machine (Kane CLI and Claude Code needed, about 31 credits) | `npm run demo:fix` |
 
-`npm run demo` needs only Node 22. It re-judges three recorded loops (the demo shop's Reject and price checks, and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
+`npm run demo` needs only Node 22. It re-judges four recorded loops (the demo shop's Reject, price and cancel checks, and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
 
 ## The checks
 

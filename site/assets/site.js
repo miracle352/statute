@@ -81,11 +81,11 @@
     function frame() {
       ctx.clearRect(0, 0, W, H);
       ctx.globalCompositeOperation = "lighter";
-      const top = H * (W < 700 ? .7 : .63);
+      const top = H * (W < 700 ? .8 : .7);
       for (let r = 0; r < ROWS; r++) {
         const k = r / (ROWS - 1);               // 0 = far (top), 1 = near (bottom)
         const yRow = top + Math.pow(k, 1.55) * (H - top + 40);
-        const amp = (18 + k * 170) * (H / 900);
+        const amp = (14 + k * 120) * (H / 900);
         const spread = .55 + k * 1.1;            // rows widen as they come closer
         for (let c = 0; c < COLS; c++) {
           const x = c / (COLS - 1) - .5;
@@ -325,7 +325,7 @@
     setRoll("stat-sites", S.sites); setRoll("stat-viol", S.violations); setRoll("stat-pass", S.passed);
     setRoll("stat-countries", S.countries); setRoll("stat-credits", S.credits);
     note.textContent = `Kane CLI visited ${S.sites} popular sites in ${S.countries} countries as a new visitor, clicked Reject wherever a cookie banner was shown, kept browsing and recorded every request.${S.notJudged ? ` ${S.notJudged} could not be judged: they blocked automated browsers, showed Kane no banner, or gave no way to refuse.` : ""} Sites are anonymised. Evidence, not legal advice.`;
-    const word = { violation: "Kept tracking", pass: "Held up" };
+    const word = { violation: "Tracked without consent", pass: "Held up" };
     const order = { violation: 0, pass: 1 };
     const rows = [...data.rows].sort((a, b) => (order[a.verdict] ?? 2) - (order[b.verdict] ?? 2) || b.afterReject - a.afterReject);
     wall.innerHTML = rows.map((r, i) => {

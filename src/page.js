@@ -156,7 +156,8 @@ function build({ out, packs, url = "" }) {
   const lastMain = [...kaneRuns].reverse().find((e) => e.pack === main.id);
   const fixed = !!lastMain && lastMain.result && lastMain.result.verdict === "pass" && first && first.result && first.result.verdict === "violation";
   const status = fixed ? "fixed" : lastMain && lastMain.result ? lastMain.result.verdict : "inconclusive";
-  const afterCount = (r) => (r && r.trackerRequests ? r.trackerRequests.filter((x) => x.phase === "after").reduce((a, x) => a + x.count, 0) : 0);
+  // Every counted tracker request made without consent: after Reject, or before any choice.
+  const afterCount = (r) => (r && r.trackerRequests ? r.trackerRequests.filter((x) => !x.notCounted).reduce((a, x) => a + x.count, 0) : 0);
   const ids = (first && first.result && first.result.idsAfterReject) || [];
   const rounds = Math.max(1, ...entries.map((e) => e.round || 1));
   const credits = loop.credits != null ? Number(loop.credits) : kaneRuns.reduce((a, e) => a + (Number(e.credits) || 0), 0);
@@ -169,7 +170,7 @@ function build({ out, packs, url = "" }) {
         violation: "Kane caught a visitor being tracked after they refused cookies.",
         pass: "Kane refused cookies and no tracker followed.",
       },
-      stat: () => [`${afterCount(first && first.result)} → ${afterCount(lastMain && lastMain.result)}`, "tracker requests after “Reject”"],
+      stat: () => [`${afterCount(first && first.result)} → ${afterCount(lastMain && lastMain.result)}`, "tracker requests without consent"],
       exhibit: () => `
   <div class="ex-grid">
     <div>
@@ -177,7 +178,7 @@ function build({ out, packs, url = "" }) {
       ${ids.length ? `<div class="idbox"><span>Visitor ID sent to Google after “Reject”</span><code>${esc(ids[0].split(": ").pop())}</code><small>${esc(ids[0].split(": ")[0])}</small></div>` : ""}
       ${first.result.rejectClick ? `<p class="meta">Kane clicked “${esc(first.result.rejectClick.label)}” at <span class="mono">${esc((first.result.rejectClick.time || "").replace("T", " ").replace(/\.\d+Z$/, " UTC"))}</span>. Every request after that moment is counted as after the refusal.</p>` : ""}
     </div>
-    ${shot(first.shots.find((x) => /reject|declin|refus/i.test(x.caption)) || first.shots[0], first.key, "The outline marks what it clicked.")}
+    ${shot(first.shots.find((x) => /reject|declin|refus/i.test(x.caption)) || first.shots[first.shots.length - 1], first.key, "The outline marks what it clicked.")}
   </div>
   ${trackerTable(first.result)}`,
     },

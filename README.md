@@ -35,6 +35,29 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 3. **Your agent fixes.** `statute fix` hands the report, the rule and the law to Claude Code (`claude -p`, edit tools only, working in your app's folder). It restarts your app and sends Kane back.
 4. **Kane proves.** The loop stops when Reject passes *and* Accept still loads the tags, or after three rounds. The case file shows every round with Kane's screenshots and share links.
 
+## Put Kane inside your agent
+
+Statute can sit inside the coding agent itself, so the agent hears from Kane without you running anything.
+
+**As an MCP server.** Any agent that speaks MCP gets two tools: `statute_check` (Kane checks a page against a rule; the verdict and evidence come back into the conversation) and `statute_rules` (the rules and the laws behind them).
+
+    claude mcp add statute -- npx -y github:miracle352/statute mcp
+
+Then ask the agent to "check consent on http://localhost:3000 with statute", or let it decide to after it touches a cookie banner, a price or a subscription flow.
+
+**As a Claude Code hook.** When Claude Code is about to finish, Kane checks the app. On a violation the hook blocks the stop and hands Claude the report, so it keeps fixing until Kane passes (three rounds at most). Add `statute.json` and `.claude/settings.json` to your project:
+
+```json
+{ "check": "consent", "url": "http://localhost:3000/", "start": "npm run dev", "rounds": 3 }
+```
+
+```json
+{ "hooks": { "Stop": [ { "hooks": [ { "type": "command", "timeout": 900,
+  "command": "npx -y github:miracle352/statute hook" } ] } ] } }
+```
+
+`check` can be a list, for example `["consent", "price"]`. Projects without a `statute.json` are left alone.
+
 ## Use it in CI
 
 Add Statute to any repository. Every pull request gets Kane in a real browser, a verdict computed by code, a comment on the PR and the case file as an artifact. The job fails on a violation.
@@ -117,6 +140,8 @@ To host it: the `Dockerfile` installs Chrome and Kane CLI. Set `LT_USERNAME` and
     src/agent.js         hands a report to Claude Code
     src/page.js          builds the case file from sealed evidence
     bin/statute.js       check, fix, replay
+    bin/mcp.js           Statute as an MCP server for coding agents
+    bin/hook.js          Statute as a Claude Code Stop hook
     bin/census.js        the Census runner, --rejudge
     server/              the live site, audit queue, Chrome and its live view
     demo-store/          Lumen, a shop with deliberate compliance bugs

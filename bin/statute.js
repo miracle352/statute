@@ -210,6 +210,8 @@ function resetDemo() {
 async function main() {
   const [cmd, packId] = process.argv.slice(2);
   if (cmd === "reset-demo") return resetDemo();
+  if (cmd === "mcp") return require("./mcp.js");
+  if (cmd === "hook") return require("./hook.js");
   if (cmd === "replay") return replay(packId);
   if (cmd === "report") {
     const html = page.build({ out: path.resolve(arg("out", "statute-report")), packs: PACKS });

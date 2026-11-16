@@ -1,0 +1,1 @@
+{ "check": "consent", "url": "http://localhost:4173/", "start": "node server.js", "rounds": 3 }

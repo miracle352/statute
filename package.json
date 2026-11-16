@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "description": "Laws that test themselves. Kane CLI walks your app like a real visitor; Statute checks what it recorded against the law.",
   "bin": {
-    "statute": "bin/statute.js"
+    "statute": "bin/statute.js",
+    "statute-mcp": "bin/mcp.js",
+    "statute-hook": "bin/hook.js"
   },
   "scripts": {
     "start": "node server/index.js",

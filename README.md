@@ -202,3 +202,5 @@ To host it: the `Dockerfile` installs Chrome and Kane CLI. Set `LT_USERNAME` and
     replays/             recorded Kane runs for the zero-credit demo
 
 Photos on the site: Wikimedia Commons (CC0 and public domain). HAXCMS template: Apache-2.0.
+
+Questions or a site you think breaks these rules? Open an issue.

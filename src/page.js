@@ -87,7 +87,7 @@ function trackerTable(result) {
   const rows = (result.trackerRequests || []).slice().sort((a, b) => ({ after: 0, before: 1, unknown: 2 }[a.phase] - { after: 0, before: 1, unknown: 2 }[b.phase]));
   if (!rows.length) return "";
   return `<div class="tw"><table class="t"><thead><tr><th>When</th><th>Tracker</th><th>Request</th><th class="num">Times</th><th>Visitor ID sent</th></tr></thead><tbody>${rows
-    .map((r) => `<tr class="${r.phase}"><td>${PHASE[r.phase]}</td><td>${esc(r.tracker)}</td><td class="mono">${esc(r.method || "")} ${esc(r.url.replace(/^https?:\/\//, ""))}</td><td class="num">${r.count}</td><td class="mono">${esc((r.ids || []).map((i) => i.split(": ").pop()).join(", "))}</td></tr>`)
+    .map((r) => `<tr class="${r.phase}"><td>${PHASE[r.phase]}</td><td>${esc(r.tracker)}${r.consentDenied ? ` <small>consent denied, not counted</small>` : ""}</td><td class="mono">${esc(r.method || "")} ${esc(r.url.replace(/^https?:\/\//, ""))}</td><td class="num">${r.count}</td><td class="mono">${esc((r.ids || []).map((i) => i.split(": ").pop()).join(", "))}</td></tr>`)
     .join("")}</tbody></table></div>`;
 }
 

@@ -27,10 +27,103 @@
     setTimeout(() => (label.textContent = "Copy"), 1600);
   }));
 
+
+  /* ---------- motion ---------- */
+  const revealer = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); revealer.unobserve(e.target); } }), { threshold: .15, rootMargin: "0px 0px -6% 0px" });
+  $$("[data-split]").forEach((el) => {
+    const words = el.textContent.trim().split(/\s+/);
+    el.setAttribute("aria-label", el.textContent.trim());
+    el.innerHTML = words.map((w, i) => `<span class="w" aria-hidden="true" style="--i:${i}">${esc(w)}</span>`).join(" ");
+  });
+  $$(".reveal, [data-split], .stats-art").forEach((el) => revealer.observe(el));
+  if (reduce) $$(".reveal, [data-split]").forEach((el) => el.classList.add("in"));
+
+  // rolling digits: each digit is a column of 0-9 that slides into place
+  const rollTargets = {};
+  function buildRoll(el, value) {
+    const str = Number(value).toLocaleString("en-US");
+    el.setAttribute("aria-label", str);
+    el.dataset.v = str;
+    el.innerHTML = [...str].map((ch, i) => /\d/.test(ch)
+      ? `<span class="col" aria-hidden="true" style="--i:${i}">${"0123456789".split("").map((d) => `<span>${d}</span>`).join("")}</span>`
+      : `<span aria-hidden="true">${ch}</span>`).join("");
+    const go = () => el.dataset.v === str && [...el.querySelectorAll(".col")].forEach((c, k) => {
+      const digit = str.replace(/[^\d]/g, "")[k];
+      c.style.transform = `translateY(-${digit}em)`;
+    });
+    if (reduce) { go(); return; }
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); requestAnimationFrame(() => requestAnimationFrame(go)); } }, { threshold: .4 });
+    io.observe(el);
+  }
+  function setRoll(key, value) { const el = $(`[data-roll="${key}"]`); if (el) buildRoll(el, value); }
+  $$("[data-roll]").forEach((el) => buildRoll(el, 0));
+
+  // accordion
+  $$(".acc-item").forEach((item) => {
+    const head = $(".acc-head", item);
+    head.addEventListener("click", () => {
+      const open = !item.classList.contains("open");
+      $$(".acc-item").forEach((o) => { o.classList.remove("open"); $(".acc-head", o).setAttribute("aria-expanded", "false"); });
+      if (open) { item.classList.add("open"); head.setAttribute("aria-expanded", "true"); }
+    });
+  });
+
+  // hero terrain: a field of points rolling like dunes, drawn in perspective
+  (() => {
+    const cv = $("#terrain"); if (!cv) return;
+    const ctx = cv.getContext("2d");
+    let W = 0, H = 0, dpr = 1, raf = 0, t = 0, visible = true;
+    const size = () => { dpr = Math.min(devicePixelRatio || 1, 2); W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    const COLS = innerWidth < 700 ? 110 : 220, ROWS = innerWidth < 700 ? 42 : 64;
+    function height(x, z, t) {
+      return Math.sin(x * 2.1 + t * .5) * .45 + Math.sin(z * 3.3 - t * .35) * .35 + Math.sin((x + z) * 5.2 + t * .8) * .12 + Math.cos(x * 7 - z * 2 + t) * .05;
+    }
+    function frame() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalCompositeOperation = "lighter";
+      const top = H * (W < 700 ? .7 : .63);
+      for (let r = 0; r < ROWS; r++) {
+        const k = r / (ROWS - 1);               // 0 = far (top), 1 = near (bottom)
+        const yRow = top + Math.pow(k, 1.55) * (H - top + 40);
+        const amp = (18 + k * 170) * (H / 900);
+        const spread = .55 + k * 1.1;            // rows widen as they come closer
+        for (let c = 0; c < COLS; c++) {
+          const x = c / (COLS - 1) - .5;
+          const h = height(x * 2.4, k * 2.2 - t * .05, t);
+          const px = W / 2 + x * W * spread;
+          if (px < -6 || px > W + 6) continue;
+          const py = yRow - (h + .5) * amp;
+          const lum = Math.max(0, Math.min(1, (h + .7) / 1.5));
+          const a = Math.min(1, (.12 + k * 1.1) * (.2 + lum * .95));
+          if (a < .03) continue;
+          ctx.fillStyle = `rgba(${60 + lum * 80 | 0},${150 + lum * 105 | 0},${100 + lum * 50 | 0},${a})`;
+          const sz = (.8 + k * 1.8) * (.6 + lum * .9);
+          ctx.fillRect(px, py, sz, sz);
+        }
+      }
+    }
+    function loop() { if (!visible) { raf = 0; return; } t += .012; frame(); raf = requestAnimationFrame(loop); }
+    size(); frame();
+    addEventListener("resize", () => { size(); frame(); });
+    if (reduce) return;
+    new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible && !raf) loop(); }).observe(cv);
+    loop();
+  })();
+
   /* ---------- console ---------- */
   const screen = $("#screen"), cap = $("#screenCap"), feed = $("#feed"), count = $("#feedCount");
   const verdict = $("#verdict"), pill = $("#verdictPill"), vtext = $("#verdictText"), vlink = $("#verdictLink");
   const urlLabel = $("#consoleUrl"), mode = $("#consoleMode");
+  const stamp = $("#stamp"), stampWord = $("#stampWord"), consoleEl = $("#console"), fig = screen.parentElement;
+  function slam(kind) {
+    stamp.classList.remove("on", "pass");
+    if (!kind) return;
+    stampWord.textContent = kind === "pass" ? "Proven" : "Violation";
+    stamp.classList.toggle("pass", kind === "pass");
+    void stamp.offsetWidth;
+    stamp.classList.add("on");
+    if (kind !== "pass" && !reduce) { consoleEl.classList.remove("shake"); void consoleEl.offsetWidth; consoleEl.classList.add("shake"); }
+  }
   let requests = 0;
   let session = 0; // bumps when a live audit takes over, so the replay stops
 
@@ -50,6 +143,8 @@
   function show(src, caption) {
     if (caption) cap.textContent = caption;
     if (!src || screen.getAttribute("src") === src) return;
+    fig.classList.remove("waiting");
+    if (!screen.getAttribute("src")) { screen.src = src; return; }
     screen.classList.add("swap");
     const img = new Image();
     img.onload = () => { screen.src = src; screen.classList.remove("swap"); };
@@ -61,6 +156,7 @@
     vtext.innerHTML = text;
     vlink.hidden = !href;
     if (href) vlink.href = href;
+    if (state === "violation" || state === "pass") slam(state); else slam(null);
   }
   function reset(label, modeText, live) {
     feed.innerHTML = "";
@@ -81,24 +177,25 @@
       setVerdict("idle", "Kane opens the shop as a new visitor. The cookie banner is showing.");
       show(R.steps[0].img, "Kane opens the shop");
       const shots = R.steps;
-      let shot = 1, marked = false, afterTr = 0;
-      for (const r of R.run1) {
+      let shot = 0, marked = false, afterTr = 0;
+      for (const r of R.run) {
         if (!alive()) return;
         if (r.after && !marked) {
           marked = true;
-          show(shots[1].img, "Kane clicks “Reject all”");
+          shot = 2; show(shots[2].img, shots[2].caption);
           line("Kane clicks “Reject all”", "mark");
           setVerdict("running", "Visitor refused cookies. Watching what still loads.");
           await sleep(1600);
         }
-        const isPage = /^localhost:4173\/(product|cart|account)/.test(r.u) || (r.after && r.u === "localhost:4173/");
+        const isPage = r.after && /\/demo\/[a-z]/.test(r.u) && !/\.(js|css|jpg|png)$/.test(r.u);
         if (marked && isPage && shot < shots.length - 1) { shot++; show(shots[shot].img, shots[shot].caption); }
         request({ method: r.m, url: r.u, tracker: r.tr, after: r.after });
+        if (!marked && r.tr && shot === 0) { await sleep(900); shot = 1; show(shots[1].img, shots[1].caption); }
         if (r.tr && r.after) { afterTr++; setVerdict("running", `<strong>${afterTr}</strong> tracker request${afterTr === 1 ? "" : "s"} after Reject`); }
         await sleep(r.tr ? 520 : 260);
       }
       if (!alive()) return;
-      const id = (R.run1.find((r) => r.id) || {}).id;
+      const id = (R.ids && R.ids[0]) || (R.run.find((r) => r.id && r.after) || {}).id;
       setVerdict("violation", `${afterTr} tracker requests after Reject. Google Analytics kept receiving visitor ID <code>${esc(id)}</code>.`, "cases/reject-means-reject.html");
       await sleep(5200);
       if (!alive()) return;
@@ -112,9 +209,9 @@
   }
   if (reduce) {
     reset("Lumen demo shop", "Recorded run");
-    R.run1.slice(-10).forEach((r) => request({ method: r.m, url: r.u, tracker: r.tr, after: r.after }));
-    show(R.steps[1].img, "Kane clicks “Reject all”");
-    setVerdict("violation", "8 tracker requests after Reject, fixed by Claude Code and proven by Kane on the next run.", "cases/reject-means-reject.html");
+    R.run.slice(-10).forEach((r) => request({ method: r.m, url: r.u, tracker: r.tr, after: r.after }));
+    show(R.steps[2].img, R.steps[2].caption);
+    setVerdict("violation", "5 tracker requests after Reject, fixed by Claude Code and proven by Kane on the next run.", "cases/reject-means-reject.html");
   } else replay(session);
 
   /* ---------- live audits ---------- */
@@ -149,6 +246,10 @@
     session++;
     document.getElementById("console").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
     reset(label, r.cached ? "Saved result from the last 24 hours" : "Connecting", !r.cached);
+    screen.removeAttribute("src");
+    screen.alt = "Waiting for the first frame from Kane's browser";
+    fig.dataset.wait = r.cached ? "Loading the saved audit" : "Starting a real Chrome for Kane";
+    fig.classList.add("waiting");
     setVerdict("running", r.cached ? "Loading the saved audit." : "Starting a real Chrome for Kane.");
     cap.textContent = "Waiting for Kane";
     follow(r.id, !!r.cached);
@@ -200,9 +301,45 @@
     if (!own.checked) { say("Tick the box to confirm you own this site or may test it.", true); own.focus(); return; }
     start({ url, pack: "consent", confirm: true }, `https://${url}`);
   });
-  input.addEventListener("input", () => say(""));
+  // The bar already shows https://, so drop a scheme the visitor types or pastes.
+  const stripScheme = () => {
+    const v = input.value, clean = v.replace(/^\s*https?:\/\/\s*/i, "");
+    if (clean !== v) { input.value = clean; input.setSelectionRange(clean.length, clean.length); }
+  };
+  input.addEventListener("input", () => { stripScheme(); say(""); });
+  input.addEventListener("change", stripScheme);
+  setTimeout(stripScheme, 600); // browser autofill
   own.addEventListener("change", () => say(""));
   demoBtn.addEventListener("click", () => start({ demo: true, pack: "consent" }, "Lumen demo shop"));
+
+  /* ---------- census ---------- */
+  (async () => {
+    const wall = $("#wall"), note = $("#censusNote");
+    let data = null;
+    try { data = await (await fetch("assets/census.json", { cache: "no-store" })).json(); } catch {}
+    if (!data || !data.rows || !data.rows.length) {
+      wall.innerHTML = `<p class="wall-empty">The census is running. Each site Kane visits lands here, anonymised.</p>`;
+      return;
+    }
+    const S = data.summary;
+    setRoll("stat-sites", S.sites); setRoll("stat-viol", S.violations); setRoll("stat-pass", S.passed);
+    setRoll("stat-countries", S.countries); setRoll("stat-credits", S.credits);
+    note.textContent = `Kane CLI visited ${S.sites} popular sites in ${S.countries} countries as a new visitor, clicked Reject wherever a cookie banner was shown, kept browsing and recorded every request.${S.notJudged ? ` ${S.notJudged} could not be judged: they blocked automated browsers, showed Kane no banner, or gave no way to refuse.` : ""} Sites are anonymised. Evidence, not legal advice.`;
+    const word = { violation: "Kept tracking", pass: "Held up" };
+    const order = { violation: 0, pass: 1 };
+    const rows = [...data.rows].sort((a, b) => (order[a.verdict] ?? 2) - (order[b.verdict] ?? 2) || b.afterReject - a.afterReject);
+    wall.innerHTML = rows.map((r, i) => {
+      const cls = r.verdict === "violation" || r.verdict === "pass" ? r.verdict : "unjudged";
+      const facts = cls === "unjudged"
+        ? `<span>${r.blocked ? "The site blocked automated browsers" : r.bannerShown === false ? "No cookie banner shown to Kane" : "Kane found no way to refuse"}</span>`
+        : `<span><b>${r.afterReject}</b> tracker request${r.afterReject === 1 ? "" : "s"} after Reject</span>
+           <span><b>${r.beforeChoice}</b> before any choice</span>
+           ${r.visitorIds ? `<span><b>${r.visitorIds}</b> visitor ID${r.visitorIds === 1 ? "" : "s"} sent after Reject</span>` : ""}
+           ${r.trackers && r.trackers.length ? `<span>${esc(r.trackers.slice(0, 3).join(", "))}</span>` : ""}`;
+      return `<article class="site ${cls} reveal" style="transition-delay:${(i % 4) * 80}ms"><div class="site-top"><h3>${esc(r.label)}</h3><span class="badge">${word[r.verdict] || "Not judged"}</span></div><div class="facts">${facts}</div></article>`;
+    }).join("");
+    $$(".reveal", wall).forEach((el) => revealer.observe(el));
+  })();
 
   /* ---------- terminal: replay of a real demo:fix run ---------- */
   const TERM = [
@@ -211,7 +348,7 @@
     ["dim", "Kane is visiting http://localhost:4173..."],
     ["dim", "  step 2 done: click: Rejecting all cookies in the cookie banner"],
     ["dim", "  step 3 done: click: Clicking View product on the first product card"],
-    ["bad", "VIOLATION: Kane recorded 8 tracker requests after the visitor clicked \"Reject\", 3 before they had chosen anything."],
+    ["bad", "VIOLATION: Kane recorded 5 tracker requests after the visitor clicked \"Reject\", 3 before they had chosen anything."],
     ["bad", "  · visitor ID sent after Reject: 1522666046.1794751354"], ["", ""],
     ["", "Handing the report to Claude Code (round 1)..."],
     ["", "  claude │ What was wrong: public/tags.js loaded GA4 and the Meta pixel on every page without checking for consent."],

@@ -39,6 +39,8 @@ async function launch() {
     "--window-size=1366,900", "--lang=en-GB", "about:blank",
   ];
   if (process.platform === "linux") args.unshift("--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu");
+  // Small servers (512 MB): fewer renderer processes, no background work.
+  if (process.env.LOW_MEMORY) args.unshift("--renderer-process-limit=2", "--disable-background-networking", "--disable-component-update", "--disable-features=Translate,OptimizationHints,MediaRouter", "--js-flags=--max-old-space-size=192");
   const proc = spawn(findChrome(), args, { stdio: "ignore" });
   const endpoint = `http://127.0.0.1:${port}`;
   let info;
@@ -53,29 +55,34 @@ async function launch() {
   return { endpoint, wsUrl: info.webSocketDebuggerUrl, close };
 }
 
-// Watches all page targets: forwards screencast frames (throttled) and network
-// requests to the callbacks. Uses Node's built-in WebSocket (Node 22+).
-function watch(wsUrl, { onFrame, onRequest, fps = 4 }) {
+// Watches all page targets: takes a screenshot of the tab Kane is using about
+// every 0.7 s, and forwards every network request. Uses Node's built-in
+// WebSocket (Node 22+).
+function watch(wsUrl, { onFrame, onRequest, intervalMs = 700 }) {
   const ws = new WebSocket(wsUrl);
   let id = 0;
   const pending = new Map();
-  const send = (method, params = {}, sessionId) => new Promise((resolve) => {
+  // Every call gets an answer within `ms`, even if the tab it targets is gone.
+  const send = (method, params = {}, sessionId, ms = 4000) => new Promise((resolve) => {
     const msg = { id: ++id, method, params };
     if (sessionId) msg.sessionId = sessionId;
-    pending.set(msg.id, resolve);
-    try { ws.send(JSON.stringify(msg)); } catch { resolve(null); }
+    const t = setTimeout(() => { pending.delete(msg.id); resolve(null); }, ms);
+    pending.set(msg.id, (m) => { clearTimeout(t); resolve(m); });
+    try { ws.send(JSON.stringify(msg)); } catch { clearTimeout(t); resolve(null); }
   });
   const sessions = new Set();
-  let lastFrame = 0;
-  let activeSession = null;
+  const urls = new Map();  // session -> current URL
+  let active = null;      // the tab Kane is working in
+  let failures = 0;
+  let busy = false;
+  let lastData = "";
 
   async function setup(sid) {
     if (!sid || sessions.has(sid)) return;
     sessions.add(sid);
-    activeSession = sid;
+    if (!active) active = sid;
     await send("Network.enable", {}, sid);
     await send("Page.enable", {}, sid);
-    await send("Page.startScreencast", { format: "jpeg", quality: 60, maxWidth: 1100, maxHeight: 720, everyNthFrame: 1 }, sid);
     await send("Runtime.runIfWaitingForDebugger", {}, sid);
   }
   async function attach(targetId) {
@@ -83,8 +90,26 @@ function watch(wsUrl, { onFrame, onRequest, fps = 4 }) {
     await setup(r && r.result && r.result.sessionId);
   }
 
+  // Prefer the tab Kane last navigated; skip blank tabs.
+  function pick() {
+    if (active && sessions.has(active) && !/^about:blank/.test(urls.get(active) || "about:blank")) return active;
+    for (const s of [...sessions].reverse()) if (!/^about:blank/.test(urls.get(s) || "about:blank")) return s;
+    return null;
+  }
+  const timer = setInterval(async () => {
+    if (busy || !onFrame) return;
+    const sid = pick();
+    if (!sid) return;
+    busy = true;
+    const r = await send("Page.captureScreenshot", { format: "jpeg", quality: 60 }, sid, 2500);
+    busy = false;
+    const data = r && r.result && r.result.data;
+    if (data) { failures = 0; if (data !== lastData) { lastData = data; onFrame(data); } }
+    else if (++failures >= 3) { sessions.delete(sid); urls.delete(sid); if (active === sid) active = null; failures = 0; }
+  }, intervalMs);
+
   ws.addEventListener("open", async () => {
-    // New tabs start paused until we have network capture and screencast on.
+    // New tabs start paused until network capture is on.
     await send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
     await send("Target.setDiscoverTargets", { discover: true });
     const t = await send("Target.getTargets");
@@ -98,18 +123,23 @@ function watch(wsUrl, { onFrame, onRequest, fps = 4 }) {
       if (m.params.targetInfo.type === "page") setup(m.params.sessionId);
       else send("Runtime.runIfWaitingForDebugger", {}, m.params.sessionId);
     }
-    if (m.method === "Page.screencastFrame") {
-      send("Page.screencastFrameAck", { sessionId: m.params.sessionId }, m.sessionId);
-      const now = Date.now();
-      if (m.sessionId === activeSession && now - lastFrame >= 1000 / fps) { lastFrame = now; onFrame && onFrame(m.params.data); }
-      else if (m.sessionId !== activeSession) { activeSession = m.sessionId; }
+    if (m.method === "Target.detachedFromTarget") {
+      sessions.delete(m.params.sessionId);
+      urls.delete(m.params.sessionId);
+      if (active === m.params.sessionId) active = [...sessions].pop() || null;
     }
-    if (m.method === "Network.requestWillBeSent" && onRequest) {
+    // Follow Kane: the tab whose main frame last navigated is the one to show.
+    if (m.method === "Page.frameNavigated" && !m.params.frame.parentId && m.sessionId) {
+      urls.set(m.sessionId, m.params.frame.url);
+      if (!/^about:blank/.test(m.params.frame.url)) active = m.sessionId;
+    }
+    if (m.method === "Network.requestWillBeSent") {
+      if (m.params.type === "Document" && m.sessionId) { active = m.sessionId; urls.set(m.sessionId, m.params.request.url); }
       const r = m.params.request;
-      if (/^https?:/.test(r.url)) onRequest({ url: r.url, method: r.method, time: Date.now() });
+      if (onRequest && /^https?:/.test(r.url)) onRequest({ url: r.url, method: r.method, time: Date.now() });
     }
   });
-  return { close: () => { try { ws.close(); } catch {} } };
+  return { close: () => { clearInterval(timer); try { ws.close(); } catch {} } };
 }
 
 module.exports = { launch, watch, findChrome };

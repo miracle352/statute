@@ -56,6 +56,20 @@ function visitorId(u) {
   return null;
 }
 
+// Google Consent Mode: a hit sent with analytics storage denied is a cookieless
+// ping, not tracking with a cookie. gcd letters at positions 2,4,6,8 are
+// ad_storage, analytics_storage, ad_user_data, ad_personalization; p/q/m/u mean
+// the final state is denied, l means Consent Mode is not in use.
+const DENIED = new Set(["p", "q", "m", "u"]);
+function consentModeDenied(u) {
+  const q = u.searchParams;
+  const gcd = q.get("gcd");
+  if (gcd && gcd.length > 4 && DENIED.has(gcd[4])) return true;
+  const gcs = q.get("gcs");
+  if (gcs && /^G1[01]0$/.test(gcs)) return true;
+  return false;
+}
+
 const cookieRes = trackers.cookies.map((c) => new RegExp(c));
 const isTrackerCookie = (name) => cookieRes.some((r) => r.test(name));
 
@@ -113,13 +127,14 @@ function judge({ events, network }) {
     const t = r.time ? Date.parse(r.time) : null;
     const phase = reject && reject.time && t ? (t >= reject.time ? "after" : "before") : "unknown";
     const page = u.searchParams.get("dl") || u.searchParams.get("dp") || null;
-    hits.push({ tracker, url: u.origin + u.pathname, method: r.method, status: r.status, time: r.time, phase, page, id: visitorId(u) });
+    const denied = consentModeDenied(u);
+    hits.push({ tracker, url: u.origin + u.pathname, method: r.method, status: r.status, time: r.time, phase, page, id: denied ? null : visitorId(u), denied });
   }
 
   // Group identical endpoints per phase so the report stays readable.
   const groups = new Map();
   for (const h of hits) {
-    const key = `${h.phase}|${h.url}`;
+    const key = `${h.phase}|${h.url}|${h.denied ? "d" : ""}`;
     const g = groups.get(key) || { ...h, count: 0, pages: new Set(), ids: new Set() };
     g.count++;
     if (h.page) g.pages.add(h.page);
@@ -128,11 +143,20 @@ function judge({ events, network }) {
   }
   const trackerRequests = [...groups.values()].map((g) => ({
     phase: g.phase, tracker: g.tracker, url: g.url, method: g.method, status: g.status,
-    count: g.count, firstTime: g.time, pages: [...g.pages], ids: [...g.ids],
+    count: g.count, firstTime: g.time, pages: [...g.pages], ids: [...g.ids], consentDenied: !!g.denied,
   }));
 
-  const after = hits.filter((h) => h.phase === "after");
-  const idsAfter = [...new Set(after.filter((h) => h.id).map((h) => `${h.id.kind}: ${h.id.value}`))];
+  // If the site uses Consent Mode and its pings say "denied", the tag library
+  // loading is part of that design; count only hits that are not denied pings.
+  const usesDeniedMode = hits.some((h) => h.denied && h.phase !== "before");
+  const counts = (h) => !h.denied && !(usesDeniedMode && /googletagmanager\.com/.test(h.tracker));
+  const real = hits.filter(counts);
+  const cookieless = hits.filter((h) => h.denied && h.phase !== "before").length;
+  const after = real.filter((h) => h.phase === "after");
+  const idCounts = new Map();
+  for (const h of after) if (h.id) { const k = `${h.id.kind}: ${h.id.value}`; idCounts.set(k, (idCounts.get(k) || 0) + 1); }
+  const idsAfter = [...idCounts.keys()];
+  const repeated = [...idCounts.entries()].filter(([, n]) => n > 1);
 
   const cookieNames = new Set();
   for (const r of network.requests) {
@@ -144,38 +168,41 @@ function judge({ events, network }) {
   let verdict;
   let why;
   if (!reject && banner === false && network.harFiles !== 0) {
-    if (hits.length) {
-      verdict = "violation";
-      why = `No cookie banner was shown, and Kane recorded ${plural(hits.length, "tracker request")} before the visitor could choose anything. Visitors in the EU must be asked first.`;
-    } else {
-      verdict = "pass";
-      why = `No cookie banner was shown, and none was needed: Kane recorded ${plural(network.requests.length, "request")} and none went to a known tracker.`;
-    }
+    // Many sites show a banner only to visitors in some countries, so a site
+    // that showed none to Kane's location is not judged on this run.
+    verdict = "inconclusive";
+    why = real.length
+      ? `No cookie banner was shown to Kane's browser from its location, and ${plural(real.length, "tracker request")} went out. Sites often show banners only to visitors in the EU or UK, so this run can't judge the Reject button.`
+      : `No cookie banner was shown to Kane's browser from its location, and no tracker loaded.`;
   } else if (!reject) {
     verdict = "inconclusive";
     why = "Kane did not find or click a reject button, so this run cannot prove anything either way.";
   } else if (network.harFiles === 0) {
     verdict = "inconclusive";
     why = "The evidence pack has no network recording.";
-  } else if (hits.length || trackerCookies.length) {
+  } else if (real.length || trackerCookies.length) {
     verdict = "violation";
     const parts = [];
+    const before = real.filter((h) => h.phase === "before").length;
     if (after.length) parts.push(`${plural(after.length, "tracker request")} after the visitor clicked "Reject"`);
-    const before = hits.filter((h) => h.phase === "before").length;
-    if (before) parts.push(`${before} before they had chosen anything`);
-    if (!after.length && !before && hits.length) parts.push(plural(hits.length, "tracker request"));
+    if (before) parts.push(`${plural(before, "tracker request")} before they had chosen anything`);
+    if (!after.length && !before && real.length) parts.push(plural(real.length, "tracker request"));
     if (trackerCookies.length) parts.push(plural(trackerCookies.length, "tracker cookie"));
-    why = `Kane recorded ${parts.join(", ")}.`;
-    if (idsAfter.length) why += ` After "Reject", the same visitor ID kept going out (${idsAfter.join("; ")}).`;
+    why = `Kane recorded ${parts.join(", and ")}.`;
+    if (repeated.length) why += ` After "Reject", the same visitor ID went out more than once (${repeated.map(([k, n]) => `${k}, ${n} times`).join("; ")}).`;
+    else if (idsAfter.length) why += ` After "Reject", Google Analytics received ${plural(idsAfter.length, "visitor ID")}.`;
+    if (cookieless) why += ` ${plural(cookieless, "further hit")} said consent was denied (Google Consent Mode) and were not counted.`;
   } else {
     verdict = "pass";
-    why = `Kane refused cookies and recorded ${plural(network.requests.length, "request")}; none went to a known tracker and no visitor ID was sent.`;
+    why = cookieless
+      ? `Kane refused cookies. ${plural(cookieless, "Google hit")} still went out, but each said consent was denied (Google Consent Mode), with no visitor cookie. No other tracker loaded.`
+      : `Kane refused cookies and recorded ${plural(network.requests.length, "request")}; none went to a known tracker and no visitor ID was sent.`;
   }
 
   return {
     verdict, why,
     rejectClick: reject && { label: reject.label, time: reject.time ? new Date(reject.time).toISOString() : null },
-    trackerRequests, idsAfterReject: idsAfter, trackerCookies, bannerShown: banner,
+    trackerRequests, idsAfterReject: idsAfter, trackerCookies, bannerShown: banner, cookielessPings: cookieless,
     totalRequests: network.requests.length,
   };
 }

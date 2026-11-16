@@ -37,9 +37,9 @@ function today() {
 function liveObjective(pack, url) {
   if (pack === "consent") {
     return (
-      `Go to ${url}. If a cookie consent banner or popup appears, click the button that rejects or declines ` +
-      `all non-essential cookies; if it only offers settings, open them and choose to reject all. ` +
-      `Then open one main page from the site's navigation. Then reload the page.`
+      `Go to ${url}. Before doing anything else on the page, deal with the cookie consent banner or popup if one is shown: ` +
+      `click the button that rejects or declines all non-essential cookies; if it only offers settings, open them and choose to reject all. ` +
+      `Only after that, open one main page from the site's navigation, then reload that page.`
     );
   }
   return PACKS[pack].objective(url);
@@ -130,11 +130,14 @@ async function runJob(job) {
   fs.mkdirSync(path.join(dir, "evidence"), { recursive: true });
   emit(job, "started", { url: job.label, pack: job.pack });
 
-  const browser = await chrome.launch();
+  // With a country set (and TestMu credentials), Kane drives a TestMu AI cloud
+  // browser located in that country, so the site sees a local visitor.
+  const cloud = job.country && process.env.LT_USERNAME && process.env.LT_ACCESS_KEY;
+  if (job.country && !cloud) throw new Error("Auditing from another country needs LT_USERNAME and LT_ACCESS_KEY set in the environment.");
+  const browser = cloud ? null : await chrome.launch();
   let rejectAt = null;
   const seen = [];
-  const watcher = chrome.watch(browser.wsUrl, {
-    fps: 4,
+  const watcher = cloud ? { close() {} } : chrome.watch(browser.wsUrl, {
     onFrame: (data) => emit(job, "frame", { data }),
     onRequest: (r) => {
       let u;
@@ -152,7 +155,8 @@ async function runJob(job) {
     res = await kane.run(liveObjective(job.pack, job.target.url), {
       maxSteps: Number(process.env.MAX_STEPS || 16),
       timeout: Number(process.env.RUN_TIMEOUT || 210),
-      cdpEndpoint: browser.endpoint,
+      cdpEndpoint: cloud ? undefined : browser.endpoint,
+      wsEndpoint: cloud ? kane.cloudEndpoint({ country: job.country, username: process.env.LT_USERNAME, accessKey: process.env.LT_ACCESS_KEY, name: `Statute ${job.country}` }) : undefined,
       username: process.env.LT_USERNAME,
       accessKey: process.env.LT_ACCESS_KEY,
       onEvent: (e) => {
@@ -168,9 +172,16 @@ async function runJob(job) {
     });
   } finally {
     watcher.close();
-    browser.close();
+    if (browser) browser.close();
   }
-  if (!res.end) throw new Error("Kane stopped without a result. " + (res.stderr || "").split("\n").filter(Boolean).slice(-2).join(" "));
+  if (!res.end) {
+    // Keep Kane's full error output so a failed run can be diagnosed later.
+    fs.writeFileSync(path.join(dir, "kane-stderr.txt"), res.stderr || "");
+    fs.writeFileSync(path.join(dir, "kane-events.ndjson"), (res.events || []).map((e) => JSON.stringify(e)).join("\n"));
+    const lines = [...(res.events || []).filter((e) => /error|fail/i.test(e.type || "") || e.error || e.message).map((e) => e.message || e.error || JSON.stringify(e).slice(0, 200)), ...(res.stderr || "").split("\n")].map((l) => String(l).trim()).filter(Boolean);
+    const useful = lines.filter((l) => /error|fail|denied|limit|queue|parallel|session|unauthor|invalid|timeout|refused|exceed/i.test(l)).slice(-3);
+    throw new Error("Kane stopped without a result. " + (useful.length ? useful : lines.slice(-3)).join(" | "));
+  }
 
   // Judge from Kane's sealed evidence pack; fall back to our own live capture
   // only if the pack has no network recording.
@@ -188,6 +199,7 @@ async function runJob(job) {
   }
   if (rejectAt) network.liveRejectAt = rejectAt;
   const pk = PACKS[job.pack];
+  job.kaneEnd = res.end;
   const result = pk.judge({ end: res.end, events: res.events, network });
   fs.writeFileSync(path.join(dir, `${job.pack}.last-run.json`), JSON.stringify({ end: res.end, events: res.events, packPath }, null, 2));
   report.write(dir, pk, result, { evidence: packPath && path.basename(packPath), testUrl: res.end.test_url || network.shareLink, credits: res.end.credits_consumed, kaneStatus: res.end.status, kaneSummary: res.end.summary });
@@ -201,4 +213,14 @@ async function runJob(job) {
   save();
 }
 
-module.exports = { create, subscribe, status, loadFinished, jobs, DATA, PACKS };
+// Run one audit directly (used by the Census), outside the public queue and caps.
+async function runDirect({ url, label, pack = "consent", country, onEvent }) {
+  const id = crypto.randomBytes(6).toString("hex");
+  const job = { id, pack, country, target: { url, label, internal: true }, label, status: "queued", events: [], listeners: new Set(), key: `census|${pack}|${label}`, createdAt: Date.now() };
+  if (onEvent) job.listeners.add({ write: (chunk) => { const m = chunk.match(/^event: (\w+)\ndata: (.*)\n\n$/s); if (m && m[1] !== "frame") onEvent(JSON.parse(m[2])); }, end() {} });
+  jobs.set(id, job);
+  try { await runJob(job); } catch (e) { job.status = "error"; job.error = e.message; }
+  return job;
+}
+
+module.exports = { create, subscribe, status, loadFinished, runDirect, jobs, DATA, PACKS };

@@ -1,0 +1,6 @@
+.git
+data
+census/private
+.tmpimg
+node_modules
+*.evidence

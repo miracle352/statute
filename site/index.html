@@ -3,70 +3,87 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Statute: does your Reject button really reject?</title>
-<meta name="description" content="Paste your site. Kane CLI visits it in a real browser, refuses cookies, and records every request that still goes out. You watch it live and get a case file with the evidence.">
-<meta name="theme-color" content="#f6f7f9">
+<title>Statute: Reject should mean reject</title>
+<meta name="description" content="Paste your site. Kane CLI opens it in a real browser, clicks Reject on your cookie banner, and records every tracker that still fires. Watch it live and keep the evidence.">
+<meta name="theme-color" content="#000000">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="assets/favicon-16.png" sizes="16x16" type="image/png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-<meta property="og:title" content="Statute: does your Reject button really reject?">
-<meta property="og:description" content="Paste your site and watch Kane CLI refuse cookies on it, live. Every request after Reject is recorded and judged.">
+<meta property="og:title" content="Statute: Reject should mean reject">
+<meta property="og:description" content="Kane CLI clicks Reject on your cookie banner in a real browser and records every tracker that still fires.">
 <meta property="og:image" content="assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preload" href="assets/fonts/instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
+<div class="grain" aria-hidden="true"></div>
 
 <header class="nav" id="nav">
+  <nav class="nav-links" aria-label="Main">
+    <a href="#console-sec">Live audit</a>
+    <a href="#census">Census</a>
+    <a href="#how">How it works</a>
+  </nav>
   <a class="brand" href="#top" aria-label="Statute home">
     <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><use href="#mark"/></svg>
     <span>Statute</span>
   </a>
-  <nav class="nav-links" aria-label="Main">
-    <a href="#rules">What it checks</a>
-    <a href="#how">How it works</a>
-    <a href="#fix">Fix with your agent</a>
-    <a href="#cases">Case files</a>
-  </nav>
-  <a class="btn btn-ink nav-cta" href="https://github.com/miracle352/statute">GitHub</a>
-  <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="sheet" aria-label="Open menu"><span></span><span></span></button>
+  <div class="nav-right">
+    <a class="btn btn-white btn-sm" href="https://github.com/miracle352/statute">GitHub</a>
+    <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="sheet" aria-label="Open menu"><span></span><span></span></button>
+  </div>
 </header>
 
 <div class="sheet" id="sheet" hidden>
   <nav aria-label="Mobile">
-    <a href="#rules">What it checks</a>
+    <a href="#console-sec">Live audit</a>
+    <a href="#census">Census</a>
     <a href="#how">How it works</a>
-    <a href="#fix">Fix with your agent</a>
-    <a href="#cases">Case files</a>
+    <a href="#laws">Laws</a>
     <a href="https://github.com/miracle352/statute">GitHub</a>
   </nav>
 </div>
 
 <main id="main">
 <section class="hero" id="top">
-  <h1>Does your Reject button really&nbsp;reject?</h1>
-  <p class="lede">Paste your site. Kane CLI visits it in a real browser, refuses cookies like a careful visitor, and records every request that still goes out. You watch it happen, then get a case file with the evidence.</p>
+  <canvas class="terrain" id="terrain" aria-hidden="true"></canvas>
+  <div class="hero-inner">
+    <p class="chip reveal"><span class="dot"></span>Built on Kane CLI</p>
+    <h1 class="hero-title" data-split>Reject should mean reject.</h1>
+    <p class="hero-sub reveal">Paste your site. Kane CLI opens it in a real browser, clicks Reject on your cookie banner, and records every tracker that still fires. You watch it happen.</p>
+    <form class="audit reveal" id="auditForm" novalidate>
+      <label class="sr" for="urlInput">Your website address</label>
+      <div class="bar">
+        <span class="bar-scheme" aria-hidden="true">https://</span>
+        <input id="urlInput" name="url" type="text" inputmode="url" autocomplete="url" spellcheck="false" placeholder="yourshop.com" aria-describedby="formMsg">
+        <button class="btn btn-white" type="submit" id="runBtn">Audit with Kane</button>
+      </div>
+      <div class="audit-meta">
+        <label class="own"><input type="checkbox" id="ownBox"> I own this site or may test it</label>
+        <button class="linkish" type="button" id="demoBtn">Watch Kane audit our demo shop</button>
+      </div>
+      <p class="form-msg" id="formMsg" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+  <div class="laws-strip" aria-label="Laws the checks are based on">
+    <p>The laws behind every check</p>
+    <div class="marquee"><div class="marquee-track">
+      <span>ePrivacy Directive Art. 5(3)</span><span>GDPR Art. 7</span><span>California Civil Code §1798.120</span><span>Cal. Bus. &amp; Prof. Code §17602</span><span>German Civil Code §312k</span><span>EU Directive 2023/2673</span>
+      <span aria-hidden="true">ePrivacy Directive Art. 5(3)</span><span aria-hidden="true">GDPR Art. 7</span><span aria-hidden="true">California Civil Code §1798.120</span><span aria-hidden="true">Cal. Bus. &amp; Prof. Code §17602</span><span aria-hidden="true">German Civil Code §312k</span><span aria-hidden="true">EU Directive 2023/2673</span>
+    </div></div>
+  </div>
+</section>
 
-  <form class="audit" id="auditForm" novalidate>
-    <label class="sr" for="urlInput">Your website address</label>
-    <div class="bar">
-      <span class="bar-scheme" aria-hidden="true">https://</span>
-      <input id="urlInput" name="url" type="text" inputmode="url" autocomplete="url" spellcheck="false" placeholder="yourshop.com" aria-describedby="formMsg">
-      <button class="btn btn-ink" type="submit" id="runBtn">Audit with Kane</button>
-    </div>
-    <div class="audit-meta">
-      <label class="own"><input type="checkbox" id="ownBox"> I own this site or have permission to test it</label>
-      <span class="or">or</span>
-      <button class="linkish" type="button" id="demoBtn">watch Kane audit the Lumen demo shop</button>
-    </div>
-    <p class="form-msg" id="formMsg" role="status" aria-live="polite"></p>
-  </form>
-
-  <div class="console" id="console" aria-label="Kane CLI audit console">
+<section class="sec" id="console-sec">
+  <div class="sec-head">
+    <p class="chip reveal">Live audit</p>
+    <h2 data-split>Watch Kane click Reject, then see what still loads.</h2>
+  </div>
+  <div class="console reveal" id="console" aria-label="Kane CLI audit console">
     <div class="console-bar">
       <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
       <span class="console-url" id="consoleUrl">Lumen demo shop</span>
@@ -74,10 +91,11 @@
     </div>
     <div class="console-body">
       <figure class="screen">
-        <img id="screen" src="assets/replay/step-1.jpg" alt="What Kane's browser shows" width="1100" height="619">
-        <figcaption id="screenCap">Kane opens the site</figcaption>
+        <img id="screen" src="assets/replay/step-1.jpg" alt="What Kane's browser shows" width="1200" height="675">
+        <div class="stamp" id="stamp" aria-hidden="true"><span id="stampWord">Violation</span></div>
+        <figcaption id="screenCap">Kane opens the shop as a new visitor</figcaption>
       </figure>
-      <div class="feed" aria-live="off">
+      <div class="feed">
         <div class="feed-head"><span>What the browser sent</span><span id="feedCount">0 requests</span></div>
         <ol class="feed-lines" id="feed"></ol>
       </div>
@@ -91,110 +109,130 @@
   <p class="quota" id="quota"></p>
 </section>
 
-<section class="rules" id="rules">
-  <div class="section-head">
-    <h2>What Kane checks</h2>
-    <p>Each rule is a real-browser journey plus a verdict written in code. No model decides whether your site passed.</p>
+<section class="sec" id="census">
+  <div class="stats">
+    <figure class="stats-art reveal">
+      <img src="assets/img/justitia.jpg" alt="Statue of Justitia, blindfolded, outside the Berlin Regional Court" width="1200" height="1000" loading="lazy">
+      <div class="scan" aria-hidden="true"></div>
+      <figcaption>
+        <span class="roll big" data-roll="stat-sites">0</span>
+        <strong>popular sites audited by Kane</strong>
+        <span>The Statute Census: the same Reject check, run live on sites across five continents.</span>
+      </figcaption>
+    </figure>
+    <div class="stats-panel reveal">
+      <p class="stats-intro" id="censusNote">Kane CLI visits each site as a new visitor, clicks Reject wherever a cookie banner is shown, keeps browsing and records every request. Sites are anonymised. Evidence, not legal advice.</p>
+      <dl class="stat-rows">
+        <div><dt>Kept tracking after Reject</dt><dd class="roll" data-roll="stat-viol">0</dd></div>
+        <div><dt>Held up</dt><dd class="roll" data-roll="stat-pass">0</dd></div>
+        <div><dt>Countries</dt><dd class="roll" data-roll="stat-countries">0</dd></div>
+        <div><dt>Kane credits spent</dt><dd class="roll" data-roll="stat-credits">0</dd></div>
+      </dl>
+    </div>
   </div>
-  <div class="rule-grid">
-    <article class="rule">
+  <div class="wall" id="wall"></div>
+</section>
+
+<section class="sec" id="how">
+  <div class="sec-head">
+    <p class="chip reveal">How it works</p>
+    <h2 data-split>From one click to proof.</h2>
+  </div>
+  <div class="acc" id="acc">
+    <article class="acc-item open">
+      <button class="acc-head" aria-expanded="true"><span class="acc-title">Kane visits</span><sup>01</sup><span class="tags"><span>Real Chrome</span><span>Sealed evidence</span></span><span class="acc-icon" aria-hidden="true"></span></button>
+      <div class="acc-body"><div class="acc-inner">
+        <img src="assets/replay/step-2.jpg" alt="Kane's screenshot of the demo shop with the cookie banner open" loading="lazy" width="1200" height="675">
+        <p>Kane CLI drives a real Chrome like a careful visitor: it finds the cookie banner, clicks Reject, opens a page and reloads. Every request and every click is sealed in a Kane evidence pack.</p>
+      </div></div>
+    </article>
+    <article class="acc-item">
+      <button class="acc-head" aria-expanded="false"><span class="acc-title">Code judges</span><sup>02</sup><span class="tags"><span>Tracker list</span><span>Reject timestamp</span><span>Consent Mode</span></span><span class="acc-icon" aria-hidden="true"></span></button>
+      <div class="acc-body"><div class="acc-inner">
+        <img src="assets/img/relief.jpg" alt="Stone relief of Justice holding scales and a sword" loading="lazy" width="1000" height="1000">
+        <p>No model decides the verdict. Statute reads the pack: a public tracker list, the exact second of the Reject click, the visitor IDs sent to Google, and Google's own consent signals, which are shown but not counted.</p>
+      </div></div>
+    </article>
+    <article class="acc-item">
+      <button class="acc-head" aria-expanded="false"><span class="acc-title">Your agent fixes</span><sup>03</sup><span class="tags"><span>Claude Code</span><span>Your code only</span></span><span class="acc-icon" aria-hidden="true"></span></button>
+      <div class="acc-body"><div class="acc-inner">
+        <div class="terminal" role="img" aria-label="Replay of a real demo:fix run: violation found, Claude Code fixes it, Kane proves the fix">
+          <div class="term-bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span>npm run demo:fix</span></div>
+          <pre id="term"></pre>
+        </div>
+        <p>On your own code, the report goes to Claude Code with the rule, the law and the evidence. The agent edits your app and nothing else.</p>
+      </div></div>
+    </article>
+    <article class="acc-item">
+      <button class="acc-head" aria-expanded="false"><span class="acc-title">Kane proves</span><sup>04</sup><span class="tags"><span>Reject holds</span><span>Accept still works</span></span><span class="acc-icon" aria-hidden="true"></span></button>
+      <div class="acc-body"><div class="acc-inner">
+        <img src="assets/replay/step-5.jpg" alt="Kane's screenshot of the demo shop after the fix" loading="lazy" width="1200" height="675">
+        <p>Statute restarts the app and sends Kane back. A fix counts only when Kane says so, and Kane also clicks Accept to check the tags still load, so deleting analytics can't pass as a fix.</p>
+      </div></div>
+    </article>
+  </div>
+</section>
+
+<section class="sec" id="laws">
+  <div class="sec-head">
+    <p class="chip reveal">Checks</p>
+    <h2 data-split>Each check is written from the law.</h2>
+  </div>
+  <div class="cards">
+    <article class="card reveal">
       <h3>Reject means reject</h3>
-      <p>After a visitor refuses cookies, no analytics or ads tag may load and no visitor ID may leave the browser. Kane refuses, browses and reloads; Statute reads every request it recorded and splits them at the second of the click.</p>
-      <ul class="cites"><li>ePrivacy Directive 2002/58/EC, Art. 5(3)</li><li>GDPR, Art. 4(11) and Art. 7</li><li>California Civil Code §1798.120</li></ul>
-      <span class="tag tag-live">Runs live on any site</span>
+      <p>After a visitor refuses cookies, no analytics or ads tag may load and no visitor ID may leave the browser.</p>
+      <ul><li>ePrivacy Directive 2002/58/EC, Art. 5(3)</li><li>GDPR, Art. 4(11) and Art. 7</li><li>California Civil Code §1798.120</li></ul>
     </article>
-    <article class="rule">
+    <article class="card reveal">
       <h3>Cancel as easy as signup</h3>
-      <p>A subscription started online can be cancelled online, in no more steps than it took to start. Kane subscribes, then cancels like a customer; Statute counts both paths from Kane's action log.</p>
-      <ul class="cites"><li>California Bus. &amp; Prof. Code §17602</li><li>German Civil Code §312k</li><li>EU Directive 2023/2673, Art. 11a</li></ul>
-      <span class="tag">Demo shop and CLI</span>
+      <p>A subscription started online can be cancelled online, in no more steps than it took to start.</p>
+      <ul><li>California Bus. &amp; Prof. Code §17602</li><li>German Civil Code §312k</li><li>EU Directive 2023/2673, Art. 11a</li></ul>
     </article>
-    <article class="rule">
+    <article class="card reveal">
       <h3>Bring any law</h3>
-      <p>Point Kane's <code>context ingest</code> at the published text of a law. Kane designs a check for each article and reports which ones your site proves.</p>
-      <ul class="cites"><li>Any law with a public text</li></ul>
-      <span class="tag tag-soon">In progress</span>
+      <p>Point Kane's <code>context ingest</code> at a law's published text and Kane designs a check for each article.</p>
+      <ul><li>Any law with a public text</li></ul>
     </article>
   </div>
-</section>
-
-<section class="how" id="how">
-  <div class="section-head">
-    <h2>From a real click to a proven fix</h2>
-  </div>
-  <ol class="steps">
-    <li><span class="step-n">1</span><h3>Kane visits</h3><p>Kane CLI drives a real Chrome like a customer. Every request and click is sealed in a Kane evidence pack.</p></li>
-    <li><span class="step-n">2</span><h3>Code judges</h3><p>Statute reads the pack itself: a fixed list of known trackers, the exact time of the Reject click, step counts.</p></li>
-    <li><span class="step-n">3</span><h3>Your agent fixes</h3><p>On your own code, the report goes to Claude Code with the rule, the law and the evidence. It changes the app, never the test.</p></li>
-    <li><span class="step-n">4</span><h3>Kane proves</h3><p>Statute restarts the app and sends Kane back. A fix counts when Kane says so, and Accept must still work.</p></li>
-  </ol>
-</section>
-
-<section class="fix" id="fix">
-  <div class="fix-copy">
-    <h2>Found something? Fix it in one command.</h2>
-    <p>The website finds and records. On your machine, the same check runs in a loop with your coding agent: Kane finds the violation, Claude Code changes your code, Kane proves the fix, and you get the case file.</p>
-    <div class="cmd"><code>npm run demo:fix</code><button class="btn btn-ghost copy" data-copy="npm run demo:fix">Copy<span class="sr"> command</span></button></div>
-    <p class="small">Works with Kane CLI on macOS, Linux and Windows. About 31 credits for a full find, fix and prove loop in our runs.</p>
-  </div>
-  <div class="terminal" role="img" aria-label="Replay of a real demo:fix run: violation found, Claude Code fixes it, Kane proves the fix">
-    <div class="term-bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span>statute</span></div>
-    <pre id="term"></pre>
+  <div class="cta-row reveal">
+    <div class="cmd"><code>npm run demo:fix</code><button class="btn btn-ghost btn-sm copy" data-copy="npm run demo:fix">Copy<span class="sr"> command</span></button></div>
+    <a class="linkish" href="cases/reject-means-reject.html">Case file: Reject means reject</a>
+    <a class="linkish" href="cases/cancel-as-easy-as-signup.html">Case file: Cancel as easy as signup</a>
   </div>
 </section>
 
-<section class="cases" id="cases">
-  <div class="section-head">
-    <h2>Case files from real runs</h2>
-    <p>Every number in these files is computed by code from Kane CLI's sealed evidence packs, with links to each run in TestMu Test Manager.</p>
+<section class="sec faq" id="faq">
+  <div class="sec-head">
+    <p class="chip reveal">Questions</p>
+    <h2 data-split>Before you paste a URL.</h2>
   </div>
-  <div class="case-list">
-    <a class="case" href="cases/reject-means-reject.html">
-      <div class="case-figure"><span class="was">8</span><span class="now">0</span></div>
-      <div class="case-text">
-        <h3>Reject means reject</h3>
-        <p>Google Analytics kept receiving the visitor ID 1522666046.1794751354 after the visitor clicked Reject all. Claude Code moved the tags behind consent; on the next run Kane recorded 17 requests and none went to a tracker.</p>
-        <span class="case-link">Open the case file</span>
-      </div>
-    </a>
-    <a class="case" href="cases/cancel-as-easy-as-signup.html">
-      <div class="case-figure"><span class="was">6</span><span class="now">2</span></div>
-      <div class="case-text">
-        <h3>Cancel as easy as signup</h3>
-        <p>Subscribing took 2 clicks. Cancelling went through settings, billing and a survey and ended on "To cancel, call us". Claude Code added a cancel button with one confirmation; Kane cancelled in 2 steps.</p>
-        <span class="case-link">Open the case file</span>
-      </div>
-    </a>
-  </div>
-</section>
-
-<section class="faq" id="faq">
-  <div class="section-head"><h2>Questions</h2></div>
   <div class="faq-list">
-    <details><summary>Is this legal advice?</summary><p>No. Statute produces evidence: what a real browser did, when, and against which rule. Whether that breaks the law where you operate is a question for your lawyer, who will be glad of the evidence.</p></details>
-    <details><summary>Does an AI decide whether my site broke the rule?</summary><p>No. Kane drives the browser. The verdict is computed by code from Kane's recorded traffic and action log, against a tracker list and step counts you can read in the repository.</p></details>
-    <details><summary>Why did my site come back inconclusive?</summary><p>Kane couldn't find a way to refuse cookies, for example because the banner only appears to visitors in some countries or loads after a delay. Run the CLI against your own build to control the conditions.</p></details>
+    <details><summary>Is this legal advice?</summary><p>No. Statute produces evidence: what a real browser did, when, and against which rule. Whether that breaks the law where you operate is a question for your lawyer.</p></details>
+    <details><summary>Does an AI decide whether my site broke the rule?</summary><p>No. Kane drives the browser. The verdict is computed by code from Kane's recorded traffic and action log, against a tracker list you can read in the repository.</p></details>
+    <details><summary>Why was my site not judged?</summary><p>The site blocked automated browsers, showed no banner to Kane's location, or gave no way to refuse. Many sites show banners only to visitors in the EU or UK. Run the CLI against your own build to control the conditions.</p></details>
     <details><summary>Which sites can I audit here?</summary><p>Public websites you own or may test. Live audits are limited per day because each one runs a real browser with Kane CLI; a site audited in the last 24 hours shows its saved result.</p></details>
-    <details><summary>Which coding agents can fix the violations?</summary><p>Claude Code works today through <code>claude -p</code>. The report is plain markdown with the rule, the law and the evidence, so any agent that reads a file and edits code can take its place.</p></details>
   </div>
 </section>
 </main>
 
 <footer class="foot">
-  <div class="foot-brand"><svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><use href="#mark"/></svg><span>Statute</span></div>
-  <p>Built on <a href="https://www.testmuai.com/kane-cli">Kane CLI by TestMu AI</a> for the KaneCLI hackathon. Evidence, not legal advice.</p>
+  <p class="foot-word" aria-hidden="true">Statute</p>
+  <div class="foot-row">
+    <span>Built on <a href="https://www.testmuai.com/kane-cli">Kane CLI by TestMu AI</a>. Evidence, not legal advice.</span>
+    <span>Photos: Wikimedia Commons (CC0, public domain).</span>
+  </div>
 </footer>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="mark" viewBox="0 0 64 64">
-    <rect width="64" height="64" rx="14" fill="#0c1836"/>
     <path fill="#5fe3a7" transform="translate(15.16 47.88) scale(0.056 -0.056)" d="M154 -129Q132 -129 112.0 -124.5Q92 -120 76 -110Q66 -103 66 -94L64 16Q64 31 77 31Q85 31 88.0 26.5Q91 22 93 15Q115 -50 136.5 -75.5Q158 -101 188 -101Q217 -101 236.0 -83.0Q255 -65 255 -38Q255 -14 246.0 8.5Q237 31 215.5 58.0Q194 85 154 122Q98 175 69.5 220.5Q41 266 41 315Q41 368 70.5 404.0Q100 440 146 451Q161 454 151 466Q115 504 96.0 538.5Q77 573 77 609Q77 664 118.5 697.0Q160 730 233 730Q255 730 275.0 725.5Q295 721 311 711Q321 704 321 695L323 585Q323 570 310 570Q303 570 299.5 574.5Q296 579 294 586Q272 651 250.5 676.5Q229 702 199 702Q171 702 151.5 684.0Q132 666 132 639Q132 616 141.0 593.0Q150 570 172.0 543.0Q194 516 233 479Q289 426 317.5 380.5Q346 335 346 286Q346 233 316.5 197.0Q287 161 241 150Q226 147 236 135Q272 97 291.0 62.5Q310 28 310 -8Q310 -63 269.0 -96.0Q228 -129 154 -129ZM219 172Q252 177 271.5 199.0Q291 221 291 256Q291 294 270.0 330.5Q249 367 199 417Q186 432 168 429Q134 424 115.0 402.0Q96 380 96 345Q96 308 117.5 271.0Q139 234 188 184Q201 169 219 172Z"/>
-    <path d="M34 44 L39.5 49.5 L52 32" fill="none" stroke="#0c1836" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M34 44 L39.5 49.5 L52 32" fill="none" stroke="#000" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M34 44 L39.5 49.5 L52 32" fill="none" stroke="#5fe3a7" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
   </symbol>
 </svg>
 
-<script>window.REPLAY = {"steps":[{"n":1,"img":"assets/replay/step-1.jpg","caption":"Navigate to http://localhost:4173","url":"http://localhost:4173/"},{"n":2,"img":"assets/replay/step-2.jpg","caption":"Rejecting all cookies in the cookie banner","url":"http://localhost:4173/"},{"n":3,"img":"assets/replay/step-3.jpg","caption":"Clicking View product on the first product card","url":"http://localhost:4173/"},{"n":4,"img":"assets/replay/step-4.jpg","caption":"Clicking Add to cart button","url":"http://localhost:4173/product/lamp"},{"n":5,"img":"assets/replay/step-5.jpg","caption":"Kane reloads the page","url":"http://localhost:4173/cart"}],"run1":[{"t":0,"m":"GET","u":"localhost:4173/","s":200,"tr":0,"id":null,"after":0},{"t":0,"m":"GET","u":"localhost:4173/style.css","s":200,"tr":0,"id":null,"after":0},{"t":0,"m":"GET","u":"localhost:4173/tags.js","s":200,"tr":0,"id":null,"after":0},{"t":0,"m":"GET","u":"localhost:4173/consent.js","s":200,"tr":0,"id":null,"after":0},{"t":0,"m":"GET","u":"www.googletagmanager.com/gtag/js","s":200,"tr":1,"id":null,"after":0},{"t":0,"m":"GET","u":"connect.facebook.net/en_US/fbevents.js","s":200,"tr":1,"id":null,"after":0},{"t":0.2,"m":"POST","u":"www.google-analytics.com/g/collect","s":204,"tr":1,"id":"1522666046.1794751354","after":0},{"t":18.4,"m":"GET","u":"localhost:4173/product/lamp","s":200,"tr":0,"id":null,"after":1},{"t":18.6,"m":"GET","u":"localhost:4173/style.css","s":200,"tr":0,"id":null,"after":1},{"t":18.6,"m":"GET","u":"localhost:4173/tags.js","s":200,"tr":0,"id":null,"after":1},{"t":18.6,"m":"GET","u":"localhost:4173/consent.js","s":200,"tr":0,"id":null,"after":1},{"t":18.7,"m":"GET","u":"www.googletagmanager.com/gtag/js","s":200,"tr":1,"id":null,"after":1},{"t":18.7,"m":"GET","u":"connect.facebook.net/en_US/fbevents.js","s":200,"tr":1,"id":null,"after":1},{"t":24,"m":"POST","u":"www.google-analytics.com/g/collect","s":204,"tr":1,"id":"1522666046.1794751354","after":1},{"t":26.2,"m":"POST","u":"localhost:4173/cart/add","s":303,"tr":0,"id":null,"after":1},{"t":26.2,"m":"GET","u":"localhost:4173/cart","s":200,"tr":0,"id":null,"after":1},{"t":26.2,"m":"GET","u":"localhost:4173/style.css","s":200,"tr":0,"id":null,"after":1},{"t":26.2,"m":"GET","u":"localhost:4173/tags.js","s":200,"tr":0,"id":null,"after":1},{"t":26.2,"m":"GET","u":"localhost:4173/consent.js","s":200,"tr":0,"id":null,"after":1},{"t":26.3,"m":"GET","u":"www.googletagmanager.com/gtag/js","s":200,"tr":1,"id":null,"after":1},{"t":26.3,"m":"GET","u":"connect.facebook.net/en_US/fbevents.js","s":200,"tr":1,"id":null,"after":1},{"t":29.9,"m":"GET","u":"localhost:4173/cart","s":200,"tr":0,"id":null,"after":1},{"t":29.9,"m":"GET","u":"localhost:4173/style.css","s":200,"tr":0,"id":null,"after":1},{"t":29.9,"m":"GET","u":"localhost:4173/tags.js","s":200,"tr":0,"id":null,"after":1},{"t":29.9,"m":"GET","u":"localhost:4173/consent.js","s":200,"tr":0,"id":null,"after":1},{"t":29.9,"m":"GET","u":"www.googletagmanager.com/gtag/js","s":200,"tr":1,"id":null,"after":1},{"t":29.9,"m":"GET","u":"connect.facebook.net/en_US/fbevents.js","s":200,"tr":1,"id":null,"after":1},{"t":35,"m":"POST","u":"www.google-analytics.com/g/collect","s":204,"tr":1,"id":"1522666046.1794751354","after":1}]};</script>
+<script>window.REPLAY = {"steps": [{"n": 1, "img": "assets/replay/step-1.jpg", "caption": "Kane opens the shop as a new visitor", "url": "http://127.0.0.1:8080/demo/", "kind": "navigate"}, {"n": 2, "img": "assets/replay/step-2.jpg", "caption": "The banner only offers settings, so Kane opens them", "url": "http://127.0.0.1:8080/demo/", "kind": "analyze"}, {"n": 3, "img": "assets/replay/step-3.jpg", "caption": "Kane clicks “Reject all”", "url": "http://127.0.0.1:8080/demo/", "kind": "click"}, {"n": 4, "img": "assets/replay/step-4.jpg", "caption": "Kane opens Lumen Plus from the menu", "url": "http://127.0.0.1:8080/demo/", "kind": "click"}, {"n": 5, "img": "assets/replay/step-5.jpg", "caption": "Kane reloads the page", "url": "http://127.0.0.1:8080/demo/subscribe", "kind": ""}], "run": [{"t": 0, "m": "GET", "u": "127.0.0.1:8080/demo/", "s": 200, "tr": 0, "id": null, "after": 0}, {"t": 0, "m": "GET", "u": "127.0.0.1:8080/demo/tags.js", "s": 200, "tr": 0, "id": null, "after": 0}, {"t": 0, "m": "GET", "u": "127.0.0.1:8080/demo/consent.js", "s": 200, "tr": 0, "id": null, "after": 0}, {"t": 0, "m": "GET", "u": "www.googletagmanager.com/gtag/js", "s": 200, "tr": 1, "id": null, "after": 0}, {"t": 0, "m": "GET", "u": "connect.facebook.net/en_US/fbevents.js", "s": 200, "tr": 1, "id": null, "after": 0}, {"t": 0.2, "m": "POST", "u": "www.google-analytics.com/g/collect", "s": 204, "tr": 1, "id": "864470397.1794760736", "after": 0}, {"t": 35.3, "m": "GET", "u": "127.0.0.1:8080/demo/subscribe", "s": 200, "tr": 0, "id": null, "after": 1}, {"t": 35.4, "m": "GET", "u": "127.0.0.1:8080/demo/tags.js", "s": 200, "tr": 0, "id": null, "after": 1}, {"t": 35.4, "m": "GET", "u": "127.0.0.1:8080/demo/consent.js", "s": 200, "tr": 0, "id": null, "after": 1}, {"t": 35.4, "m": "GET", "u": "www.googletagmanager.com/gtag/js", "s": 200, "tr": 1, "id": null, "after": 1}, {"t": 35.4, "m": "GET", "u": "connect.facebook.net/en_US/fbevents.js", "s": 200, "tr": 1, "id": null, "after": 1}, {"t": 40.3, "m": "GET", "u": "127.0.0.1:8080/demo/subscribe", "s": 200, "tr": 0, "id": null, "after": 1}, {"t": 40.3, "m": "GET", "u": "127.0.0.1:8080/demo/tags.js", "s": 200, "tr": 0, "id": null, "after": 1}, {"t": 40.3, "m": "GET", "u": "127.0.0.1:8080/demo/consent.js", "s": 200, "tr": 0, "id": null, "after": 1}, {"t": 40.3, "m": "GET", "u": "www.googletagmanager.com/gtag/js", "s": 200, "tr": 1, "id": null, "after": 1}, {"t": 40.3, "m": "GET", "u": "connect.facebook.net/en_US/fbevents.js", "s": 200, "tr": 1, "id": null, "after": 1}, {"t": 45.3, "m": "POST", "u": "www.google-analytics.com/g/collect", "s": 204, "tr": 1, "id": "864470397.1794760736", "after": 1}], "ids": ["Google Analytics client ID (_ga cookie): 864470397.1794760736"]};</script>
 <script src="assets/site.js" defer></script>
 </body>
 </html>

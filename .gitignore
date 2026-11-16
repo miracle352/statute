@@ -2,3 +2,8 @@ node_modules/
 statute-report/
 .testmuai/
 *.evidence
+data/
+census/private/
+_deploy/
+.tmpimg/
+*.evidence

@@ -98,7 +98,7 @@ async function fixLoop(pack, opts) {
   const timeline = [];
   let spent = 0;
   const log = path.join(opts.out, "loop.json");
-  const save = () => fs.writeFileSync(log, JSON.stringify({ pack: pack.id, url: opts.url, app: opts.app, timeline, credits: spent }, null, 2));
+  const save = () => fs.writeFileSync(log, JSON.stringify({ pack: pack.id, url: opts.url, app: path.relative(ROOT, opts.app) || ".", strict: true, timeline, credits: spent }, null, 2));
 
   for (let round = 1; round <= rounds; round++) {
     const r = await check(pack, opts);
@@ -159,6 +159,36 @@ function writeTimeline(out, pack, timeline, spent, fixed) {
   console.log(`Case file: ${html}`);
 }
 
+// Zero-credit demo: re-judge recorded Kane runs from their sealed evidence packs
+// and rebuild each case file. Nothing is sent to Kane.
+function replay(only) {
+  const base = path.join(ROOT, "replays");
+  const names = fs.readdirSync(base).filter((n) => fs.existsSync(path.join(base, n, "loop.json")) && (!only || n === only));
+  if (!names.length) { console.error("No recorded runs found in replays/."); process.exit(1); }
+  for (const name of names) {
+    const src = path.join(base, name);
+    const out = path.join(ROOT, "statute-report", "replay", name);
+    fs.mkdirSync(out, { recursive: true });
+    fs.copyFileSync(path.join(src, "loop.json"), path.join(out, "loop.json"));
+    fs.cpSync(path.join(src, "evidence"), path.join(out, "evidence"), { recursive: true });
+    const loop = JSON.parse(fs.readFileSync(path.join(src, "loop.json"), "utf8"));
+    console.log(`\n${loop.title || name}`);
+    for (const t of loop.timeline) {
+      if (t.step === "agent") { console.log(`  round ${t.round}  Claude Code changed the app`); continue; }
+      const pk = PACKS[t.pack];
+      const dir = path.join(src, "evidence");
+      const f = String(t.evidence || "").split(/[\\/]/).pop();
+      if (!f || !pk || !fs.existsSync(path.join(dir, f))) continue;
+      const network = evidence.networkFromPack(path.join(dir, f));
+      const r = pk.judge({ end: null, events: [], network, strict: !!loop.strict });
+      console.log(`  round ${t.round}  ${pk.title.padEnd(26)} ${r.verdict.toUpperCase().padEnd(12)} ${r.why}`);
+    }
+    page.build({ out, packs: PACKS, url: loop.url });
+    console.log(`  case file: ${path.join(out, "index.html")}`);
+  }
+  console.log("\nNo Kane runs and no credits: every verdict above was recomputed from the sealed evidence packs in replays/.");
+}
+
 function resetDemo() {
   const src = path.join(ROOT, "demo-store", ".buggy");
   const dst = path.join(ROOT, "demo-store");
@@ -176,6 +206,7 @@ function resetDemo() {
 async function main() {
   const [cmd, packId] = process.argv.slice(2);
   if (cmd === "reset-demo") return resetDemo();
+  if (cmd === "replay") return replay(packId);
   if (cmd === "report") {
     const html = page.build({ out: path.resolve(arg("out", "statute-report")), packs: PACKS });
     console.log(`Case file: ${html}`);

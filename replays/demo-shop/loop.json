@@ -1,0 +1,37 @@
+{
+  "pack": "consent",
+  "url": "http://localhost:4173/",
+  "app": "demo-store",
+  "strict": true,
+  "title": "Lumen demo shop: Kane finds trackers after Reject; Claude Code fixes the shop; Kane proves Reject holds and Accept still works",
+  "timeline": [
+    {
+      "round": 1,
+      "step": "kane",
+      "pack": "consent",
+      "evidence": "evidence/consent-1794751413210.evidence",
+      "at": "2026-11-15T14:03:33.000Z"
+    },
+    {
+      "round": 1,
+      "step": "agent",
+      "agent": "claude-code",
+      "summary": "Claude Code changed the shop so its Google and Meta tags load only after Accept (the full change is in demo-store/public/tags.js after npm run demo:fix).",
+      "at": "2026-11-15T14:04:33.000Z"
+    },
+    {
+      "round": 2,
+      "step": "kane",
+      "pack": "consent",
+      "evidence": "evidence/consent-1794751523524.evidence",
+      "at": "2026-11-15T14:05:23.000Z"
+    },
+    {
+      "round": 2,
+      "step": "kane",
+      "pack": "consent-accept",
+      "evidence": "evidence/consent-accept-1794751588395.evidence",
+      "at": "2026-11-15T14:06:28.000Z"
+    }
+  ]
+}

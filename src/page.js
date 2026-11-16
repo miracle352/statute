@@ -145,7 +145,7 @@ function build({ out, packs, url = "" }) {
     if (packPath && pk) {
       const network = evidence.networkFromPack(packPath);
       const end = t.kaneStatus ? { status: t.kaneStatus, summary: t.kaneSummary } : null;
-      result = pk.judge({ end, events: [], network });
+      result = pk.judge({ end, events: [], network, strict: !!loop.strict });
       t.run = t.run || network.shareLink;
     }
     return { ...t, packPath, result, shots: steps(packPath), key: `r${i}` };

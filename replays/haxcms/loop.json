@@ -1,0 +1,56 @@
+{
+  "pack": "consent",
+  "url": "http://localhost:8095/",
+  "app": "examples/haxcms",
+  "timeline": [
+    {
+      "round": 1,
+      "step": "kane",
+      "pack": "consent",
+      "verdict": "violation",
+      "why": "Kane found no way to refuse cookies, and 4 tracker requests went out before the visitor made any choice.",
+      "run": "https://test-manager.lambdatest.com/projects/01M7E4JR87M8V8X3PY5SPEP2E6/test-cases/01M7J46RNFWHQW8EVPD3AM8PRR/dashboard/share/US_OC31M6ZTQSIA8N5D2UW6SDLUD1V5WMLS0Q9V33CP8DK9ZFTTW8GVY30I7BCSRAZW?type=summary&agentView=true&fqdn=summary-page",
+      "evidence": "evidence/consent-1794831086682.evidence",
+      "credits": 15.6289675,
+      "kaneStatus": "passed",
+      "kaneSummary": "The requested task was to open a page using the site navigation and reload it.\nNo cookie or analytics consent banner was shown, so no consent action was needed.\nOpened the About page and reloaded it successfully.",
+      "at": "2026-11-16T12:11:27.419Z"
+    },
+    {
+      "round": 1,
+      "step": "agent",
+      "agent": "claude-code",
+      "summary": "Wrong: `index.html` and `ghpages.html` loaded the Google tag (gtag) as soon as `haxcms-ready` fired, with no consent check and no way to refuse.\n\nChanged: `loadAnalyticsFromManifest()` now loads the tag only if the stored choice is \"granted\", stops if it's \"denied\", and otherwise shows an Accept/Decline banner; Accept saves the choice and loads the tag, Decline saves it and nothing loads. I haven't run it in a browser, and `node --check` can't check JavaScript inside HTML files.",
+      "at": "2026-11-16T12:12:29.279Z"
+    },
+    {
+      "round": 2,
+      "step": "kane",
+      "pack": "consent",
+      "verdict": "pass",
+      "why": "Kane refused cookies and recorded 312 requests; none went to a known tracker and no visitor ID was sent.",
+      "run": "https://test-manager.lambdatest.com/projects/01M7E4JR87M8V8X3PY5SPEP2E6/test-cases/01M7J4C28948AHZ3DM9AGNZT4D/dashboard/share/US_LNELOIJCIUVG03DPYTUFL97XGS8QKJF7FC1UYWJVEG60UHRJ9SCTIIEI0HRY0D2X?type=summary&agentView=true&fqdn=summary-page",
+      "evidence": "evidence/consent-1794831262757.evidence",
+      "credits": 21.581500000000002,
+      "kaneStatus": "passed",
+      "kaneSummary": "The request was to open a page from the site navigation and then reload it.\nA cookie or analytics consent banner was shown and its decline option was selected before continuing.\nThe About page was opened from the site navigation and then reloaded successfully.",
+      "at": "2026-11-16T12:14:23.437Z"
+    },
+    {
+      "round": 2,
+      "step": "kane",
+      "pack": "consent-accept",
+      "verdict": "pass",
+      "why": "After \"Accept\", the tags loaded as intended (google-analytics.com).",
+      "run": "https://test-manager.lambdatest.com/projects/01M7E4JR87M8V8X3PY5SPEP2E6/test-cases/01M7J4FHY38V2DRQVG7T6NQ1PE/dashboard/share/US_SKQSIE0CCUMV7HEA97UPVNVPZGMTTP8K063QWJF9Z0QWE0IXO45FJYD6NSB49YPA?type=summary&agentView=true&fqdn=summary-page",
+      "evidence": "evidence/consent-accept-1794831347132.evidence",
+      "credits": 12.65289,
+      "kaneStatus": "passed",
+      "kaneSummary": "Accepted the site\u2019s cookie or analytics consent prompt.\nOpened the About page from the site navigation.\nThe requested navigation was completed successfully.",
+      "at": "2026-11-16T12:15:47.769Z"
+    }
+  ],
+  "credits": 49.8633575,
+  "title": "HAXCMS (real open-source template): Kane finds Google Analytics loading with no way to refuse; Claude Code adds Accept/Decline; Kane proves it",
+  "strict": true
+}

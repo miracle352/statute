@@ -36,7 +36,7 @@ async function launch() {
   const args = [
     "--headless=new", `--remote-debugging-port=${port}`, "--remote-debugging-address=127.0.0.1",
     `--user-data-dir=${dir}`, "--no-first-run", "--no-default-browser-check", "--disable-extensions",
-    "--window-size=1366,900", "--lang=en-GB", "about:blank",
+    "--window-size=1366,900", "--lang=en-GB", "--disable-crash-reporter", "--disable-breakpad", "about:blank",
   ];
   if (process.platform === "linux") args.unshift("--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu");
   // Small servers (512 MB): fewer renderer processes, no background work.

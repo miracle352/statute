@@ -10,12 +10,11 @@ RUN apt-get update \
 
 RUN npm install -g @testmuai/kane-cli
 
-# Hugging Face Spaces runs containers as user 1000 on port 7860.
-RUN useradd -m -u 1000 app || true
+# The node image already has a non-root user "node" (uid 1000, home /home/node).
 WORKDIR /app
 COPY --chown=1000:1000 . .
-RUN rm -rf census/private data && mkdir -p data && chown -R 1000:1000 /app
-USER 1000
-ENV HOME=/home/app PORT=7860 LOW_MEMORY=1 MAX_STEPS=12 KANE_CLI_CHROME_PATH=/usr/bin/google-chrome-stable NODE_ENV=production
+RUN rm -rf census/private data && mkdir -p data && chown -R node:node /app
+USER node
+ENV HOME=/home/node PORT=7860 LOW_MEMORY=1 MAX_STEPS=12 KANE_CLI_CHROME_PATH=/usr/bin/google-chrome-stable NODE_ENV=production
 EXPOSE 7860
 CMD ["node", "server/index.js"]

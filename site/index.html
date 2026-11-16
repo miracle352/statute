@@ -111,6 +111,17 @@
       <a class="verdict-link" id="verdictLink" href="cases/reject-means-reject.html">Open the case file</a>
     </div>
   </div>
+  <div class="fixit" id="fixit" hidden>
+    <div class="fixit-copy">
+      <h3>Fix it with your agent</h3>
+      <p>Give your coding agent Kane as a tool. It runs this same check against your local build, fixes the code, and checks again until Kane passes.</p>
+    </div>
+    <div class="fixit-steps">
+      <div class="cmd"><code id="fixCmd1">claude mcp add statute -- npx -y github:miracle352/statute mcp</code><button class="btn btn-ghost btn-sm copy" data-copy-from="fixCmd1">Copy</button></div>
+      <div class="cmd"><code id="fixCmd2">Check consent on http://localhost:3000 with statute and fix what it finds.</code><button class="btn btn-ghost btn-sm copy" data-copy-from="fixCmd2">Copy</button></div>
+      <p class="small">Prefer it automatic? The <a href="https://github.com/miracle352/statute#put-kane-inside-your-agent">Claude Code hook</a> blocks your agent's "done" until Kane passes. Or add the <a href="https://github.com/miracle352/statute#use-it-in-ci">GitHub Action</a> to check every pull request.</p>
+    </div>
+  </div>
   <p class="quota" id="quota"></p>
 </section>
 
@@ -205,7 +216,8 @@
     <a class="linkish" href="cases/reject-means-reject.html">Case file: Reject means reject</a>
     <a class="linkish" href="cases/cancel-as-easy-as-signup.html">Case file: Cancel as easy as signup</a>
     <a class="linkish" href="cases/price-shown-is-price-paid.html">Case file: The price shown is the price paid</a>
-    <a class="linkish" href="cases/haxcms.html">Case file: HAXCMS, a real open-source fix</a>
+    <a class="linkish" href="cases/haxcms.html">Case file: HAXCMS, real open-source code</a>
+    <a class="linkish" href="cases/in-the-wake.html">Case file: a live public site</a>
   </div>
 </section>
 

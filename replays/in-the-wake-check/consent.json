@@ -1,0 +1,67 @@
+{
+  "pack": "consent",
+  "title": "Reject means reject",
+  "rule": "When a visitor refuses cookies, no advertising or analytics tracker may load, before the choice or after it, and no visitor ID may be sent to a tracker.",
+  "laws": [
+    {
+      "ref": "ePrivacy Directive 2002/58/EC, Art. 5(3)",
+      "gist": "storing or reading non-essential data on a device needs prior consent"
+    },
+    {
+      "ref": "GDPR (EU) 2016/679, Art. 4(11) and Art. 7",
+      "gist": "consent must be freely given and as easy to withdraw as to give"
+    },
+    {
+      "ref": "California Civil Code §1798.120 (CCPA/CPRA)",
+      "gist": "consumers may opt out of the sale or sharing of their personal information"
+    }
+  ],
+  "verdict": "violation",
+  "why": "Kane found no way to refuse cookies, and 6 tracker requests went out before the visitor made any choice.",
+  "rejectClick": null,
+  "trackerRequests": [
+    {
+      "phase": "unknown",
+      "tracker": "googletagmanager.com",
+      "url": "https://www.googletagmanager.com/gtag/js",
+      "method": "GET",
+      "status": 200,
+      "count": 3,
+      "firstTime": "2026-11-16T17:26:32.867180+00:00",
+      "pages": [],
+      "ids": [],
+      "consentDenied": false,
+      "loaderOnly": true,
+      "notCounted": true
+    },
+    {
+      "phase": "unknown",
+      "tracker": "google-analytics.com",
+      "url": "https://www.google-analytics.com/g/collect",
+      "method": "POST",
+      "status": 204,
+      "count": 6,
+      "firstTime": "2026-11-16T17:26:34.075287+00:00",
+      "pages": [
+        "https://cruisinginthewake.com/",
+        "https://cruisinginthewake.com/about-us.html"
+      ],
+      "ids": [
+        "Google Analytics client ID (_ga cookie): 1321631677.1794849994"
+      ],
+      "consentDenied": false,
+      "loaderOnly": false,
+      "notCounted": false
+    }
+  ],
+  "idsAfterReject": [],
+  "trackerCookies": [],
+  "bannerShown": null,
+  "cookielessPings": 0,
+  "totalRequests": 72,
+  "evidence": "C:\\Users\\IYANUOLUWA\\statute\\statute-report\\evidence\\consent-1794850070387.evidence",
+  "testUrl": "https://test-manager.lambdatest.com/projects/01M7E4JR87M8V8X3PY5SPEP2E6/test-cases/01M7JPA5RPHYZMWZSRK6A0BQFD/dashboard/share/US_LK5DHP7GHEDPQQ3OGDHG38EX97X3ETPA9F1Q2YDP2QPFOMN4467TF68XSK8LWAD4?type=summary&agentView=true&fqdn=summary-page",
+  "credits": 19.957695,
+  "kaneStatus": "passed",
+  "kaneSummary": "The requested navigation and reload were completed on Cruising in the Wake.\nNo cookie or analytics consent banner was displayed, so no consent action was needed.\nOpened the About Us page from the site navigation and reloaded it successfully."
+}

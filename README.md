@@ -11,8 +11,10 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | Time | What | Where |
 |---|---|---|
 | 1 min | Watch Kane audit our demo shop live, in a real browser on our server | [statute-production.up.railway.app](https://statute-production.up.railway.app) → "Watch Kane audit our demo shop" |
-| 1 min | A real open-source fix: Kane finds HAXCMS loading Google Analytics with no way to refuse, Claude Code adds a banner, Kane proves Decline and Accept | [Case file](https://statute-production.up.railway.app/cases/haxcms.html) · [PR haxtheweb/haxcms-nodejs#289](https://github.com/haxtheweb/haxcms-nodejs/pull/289) · [issue #2955](https://github.com/haxtheweb/issues/issues/2955) |
+| 1 min | Real open-source code: Kane finds HAXCMS loading Google Analytics with no way to refuse, Claude Code adds a banner, Kane proves Decline and Accept. The maintainer closed the PR to solve it in HAXCMS's plugin system instead | [Case file](https://statute-production.up.railway.app/cases/haxcms.html) · [PR haxtheweb/haxcms-nodejs#289](https://github.com/haxtheweb/haxcms-nodejs/pull/289) · [issue #2955](https://github.com/haxtheweb/issues/issues/2955) |
+| 1 min | A live public site, confirmed: cruisinginthewake.com sends 6 Google Analytics hits with a visitor ID before any choice, matching the site's own open issue | [Case file](https://statute-production.up.railway.app/cases/in-the-wake.html) · [their issue #1684](https://github.com/jsschrstrcks1/InTheWake/issues/1684) |
 | 1 min | The Statute Census: 7 of 15 popular European sites kept tracking after Reject, each checked by hand | [Census section](https://statute-production.up.railway.app/#census) |
+| 1 min | Kane inside Claude Code: the agent's "done" blocked until the law holds, in a real session | [Screenshots](#put-kane-inside-your-agent) |
 | 1 min | The GitHub Action commenting a violation on a real pull request | [The PR](https://github.com/miracle352/statute/pulls?q=is%3Apr+%22Test+the+Statute+action%22) |
 | 2 min | Run it yourself with no Kane credits and no login | `git clone https://github.com/miracle352/statute && cd statute && npm run demo` |
 | 10 min | Run the whole loop on your machine (Kane CLI and Claude Code needed, about 31 credits) | `npm run demo:fix` |
@@ -57,6 +59,18 @@ Then ask the agent to "check consent on http://localhost:3000 with statute", or 
 ```
 
 `check` can be a list, for example `["consent", "price"]`. Projects without a `statute.json` are left alone.
+
+**A real Claude Code session, 16 November 2026.** In the demo shop folder (with the hook and `statute.json` above), I asked Claude Code for something unrelated: *"Add a short newsletter signup line to the homepage footer."* It added the form and tried to finish. The hook ran Kane, which found 6 tracker requests after Reject and the same Google Analytics visitor ID sent three times, and blocked the stop:
+
+![Claude Code's stop blocked by Statute with Kane's report](docs/proof/claude-code-hook-blocks.png)
+
+Claude read the report, fixed the shop's tracking code on its own (the tags now load only after Accept), and tried to finish again. Kane re-checked, passed, and the hook let it stop. Nobody typed anything between the two:
+
+![Claude Code's summary after fixing the violation Statute flagged](docs/proof/claude-code-fixes-it.png)
+
+The MCP server in the same session: Claude Code called `statute_check` itself and reported Kane's verdict back:
+
+![Claude Code calling statute_check over MCP](docs/proof/mcp-statute-check.png)
 
 ## Use it in CI
 
@@ -107,6 +121,7 @@ Guard rails: public `http`/`https` sites only (private, internal and metadata ad
 - **A pass is about one visit.** Kane refuses, opens one page and reloads. A tracker that only fires on checkout or after a scroll would be missed.
 - **The tracker list decides what counts.** A tracker missing from `rules/trackers.json` is not seen. First-party analytics on the site's own domain is not counted.
 - **Kane proves the law, not the whole change.** On HAXCMS, Claude Code's fix passed both Kane checks but showed the banner on sites with no Google Analytics ID at all, which the issue says should stay unchanged. Kane only tested a site that had an ID. A person caught it, and the upstream PR uses a version that skips the banner when there is no ID.
+- **The HAXCMS fix was not merged.** The maintainer, who opened the original issue, closed the PR: he is solving it through a revision of HAXCMS's plugin architecture rather than by changing the page template. The problem Kane found stands; the fix that lands upstream will be theirs, not ours.
 - **My setup mistake, caught by the loop.** On the first HAXCMS run I had left an already-fixed copy of one template file in the example folder, and Claude Code copied it. Its own report said so. I restored the original files, moved my patch out of the folder and ran the loop again; the second run is the one published.
 - **Location matters.** Run from Nigeria, most European sites showed no banner at all, so they could not be judged. That is why the Census switched to in-country cloud browsers. After 16 sessions the cloud browsers stopped accepting new runs on this account, so 9 sites outside Europe were never run.
 - **Kane once filed a fee as shipping.** The first version of the price check asked Kane for "the shipping cost", and Kane put the shop's €4.99 service fee there, so the check passed when it should have failed. Now Kane only copies each checkout line with the shop's own name for it, and code decides which lines are shipping or tax.

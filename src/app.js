@@ -1,6 +1,7 @@
 // Starts and stops the app under test so each Kane run sees the latest code.
 const { spawn, execSync } = require("child_process");
 const http = require("http");
+const https = require("https");
 
 function start(command, cwd) {
   const child = spawn(command, { cwd, shell: true, stdio: "ignore", detached: process.platform !== "win32" });
@@ -19,7 +20,10 @@ function stop(child) {
 
 function ping(url) {
   return new Promise((resolve) => {
-    const req = http.get(url, (res) => { res.resume(); resolve(res.statusCode < 500); });
+    const lib = /^https:/i.test(url) ? https : http;
+    let req;
+    try { req = lib.get(url, { headers: { "user-agent": "Mozilla/5.0 (Statute reachability check)" } }, (res) => { res.resume(); resolve(res.statusCode < 500); }); }
+    catch { return resolve(false); }
     req.on("error", () => resolve(false));
     req.setTimeout(2000, () => { req.destroy(); resolve(false); });
   });

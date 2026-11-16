@@ -169,6 +169,21 @@ code { font-family: var(--mono); font-size: .9em; }
   .console { border-radius: 18px; }
 }
 
+/* fix with your agent */
+.fixit { margin-top: 16px; display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 20px 32px; align-items: center; background: var(--panel); border: 1px solid rgba(95, 227, 167, .3); border-radius: 24px; padding: clamp(20px, 3vw, 30px); box-shadow: 0 0 60px -20px rgba(95, 227, 167, .35); animation: rise .7s var(--ease) both; }
+.fixit[hidden] { display: none; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } }
+.fixit h3 { font: 400 32px/1.05 var(--serif); margin-bottom: 8px; }
+.fixit p { color: var(--soft); font-size: 15px; }
+.fixit-steps { display: grid; gap: 10px; min-width: 0; }
+.fixit .cmd { border-radius: 14px; padding: 8px 8px 8px 16px; justify-content: space-between; width: 100%; max-width: 100%; min-width: 0; }
+.fixit .cmd code { flex: 1; color: var(--mint); font-size: 13px; overflow-x: auto; white-space: nowrap; min-width: 0; scrollbar-width: none; }
+.fixit .cmd code::-webkit-scrollbar { display: none; }
+.fixit .cmd .btn { flex: none; }
+.fixit .small { font-size: 13.5px; color: var(--faint); }
+.fixit .small a { color: var(--soft); text-underline-offset: 4px; }
+@media (max-width: 860px) { .fixit { grid-template-columns: minmax(0, 1fr); } }
+
 /* the verdict stamp */
 .stamp { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; opacity: 0; }
 .stamp span { font: 400 clamp(38px, 8vw, 104px)/1 var(--serif); font-style: italic; color: var(--red); border: 2px solid currentColor; border-radius: 999px; padding: .08em .5em .14em; transform: rotate(-7deg); background: rgba(0, 0, 0, .78); backdrop-filter: blur(6px); box-shadow: 0 0 60px rgba(255, 97, 89, .35); }

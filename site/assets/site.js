@@ -23,7 +23,7 @@
   addEventListener("keydown", (e) => { if (e.key === "Escape" && !sheet.hidden) { setMenu(false); menuBtn.focus(); } });
   $$(".copy").forEach((b) => b.addEventListener("click", async () => {
     const label = b.firstChild;
-    try { await navigator.clipboard.writeText(b.dataset.copy); label.textContent = "Copied"; } catch { label.textContent = "Select it"; }
+    try { const from = b.dataset.copyFrom && document.getElementById(b.dataset.copyFrom); await navigator.clipboard.writeText(from ? from.textContent : b.dataset.copy); label.textContent = "Copied"; } catch { label.textContent = "Select it"; }
     setTimeout(() => (label.textContent = "Copy"), 1600);
   }));
 
@@ -162,6 +162,13 @@
     vlink.hidden = !href;
     if (href) vlink.href = href;
     if (state === "violation" || state === "pass") slam(state); else slam(null);
+    const fixit = $("#fixit");
+    if (fixit) {
+      // Shown once a violation appears; stays through the fix, hidden when a new audit starts.
+      if (state === "violation") fixit.hidden = false;
+      const target = /localhost|127\.0\.0\.1|demo shop/i.test(urlLabel.textContent) ? "http://localhost:3000" : urlLabel.textContent.trim();
+      const c2 = $("#fixCmd2"); if (c2) c2.textContent = `Check consent on ${target} with statute and fix what it finds.`;
+    }
   }
   function reset(label, modeText, live) {
     feed.innerHTML = "";
@@ -236,6 +243,7 @@
   function busy(on) { runBtn.disabled = on; demoBtn.disabled = on; runBtn.textContent = on ? "Kane is running" : "Audit with Kane"; }
 
   async function start(body, label) {
+    { const fx = $("#fixit"); if (fx) fx.hidden = true; } // a new live audit starts clean
     say("");
     busy(true);
     let r;

@@ -13,6 +13,7 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | 1 min | Watch Kane audit our demo shop live, in a real browser on our server | [statute-production.up.railway.app](https://statute-production.up.railway.app) → "Watch Kane audit our demo shop" |
 | 1 min | A real open-source fix: Kane finds HAXCMS loading Google Analytics with no way to refuse, Claude Code adds a banner, Kane proves Decline and Accept | [Case file](https://statute-production.up.railway.app/cases/haxcms.html) · [PR haxtheweb/haxcms-nodejs#289](https://github.com/haxtheweb/haxcms-nodejs/pull/289) · [issue #2955](https://github.com/haxtheweb/issues/issues/2955) |
 | 1 min | The Statute Census: 7 of 15 popular European sites kept tracking after Reject, each checked by hand | [Census section](https://statute-production.up.railway.app/#census) |
+| 1 min | The GitHub Action commenting a violation on a real pull request | [The PR](https://github.com/miracle352/statute/pulls?q=is%3Apr+%22Test+the+Statute+action%22) |
 | 2 min | Run it yourself with no Kane credits and no login | `git clone https://github.com/miracle352/statute && cd statute && npm run demo` |
 | 10 min | Run the whole loop on your machine (Kane CLI and Claude Code needed, about 31 credits) | `npm run demo:fix` |
 
@@ -57,6 +58,8 @@ jobs:
           lt-username: ${{ secrets.LT_USERNAME }}
           lt-access-key: ${{ secrets.LT_ACCESS_KEY }}
 ```
+
+See it on a real pull request in this repository: [the PR](https://github.com/miracle352/statute/pulls?q=is%3Apr+%22Test+the+Statute+action%22) where the Action ran on the demo shop and commented the violation.
 
 Set `LT_USERNAME` and `LT_ACCESS_KEY` as repository secrets (your TestMu AI username and access key). Each run costs Kane credits, about 20 to 40 per check. This repository runs the Action on its own demo shop in [`.github/workflows/statute.yml`](.github/workflows/statute.yml); the shop ships with its bugs on purpose, so that job reports violations without failing.
 

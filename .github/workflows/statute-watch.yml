@@ -1,0 +1,25 @@
+# Checks the live site every night. Opens an issue on a violation and closes it once the site passes.
+# Catches what no pull request shows: a tag added in Google Tag Manager, a fee switched on in a dashboard.
+name: Statute watch
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          url: https://statute-production.up.railway.app/demo/
+          check: consent
+          lt-username: ${{ secrets.LT_USERNAME }}
+          lt-access-key: ${{ secrets.LT_ACCESS_KEY }}
+          issue: "true"
+          fail-on: never

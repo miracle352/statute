@@ -119,7 +119,7 @@
     <div class="fixit-steps">
       <div class="cmd"><code id="fixCmd1">claude mcp add statute -- npx -y github:miracle352/statute mcp</code><button class="btn btn-ghost btn-sm copy" data-copy-from="fixCmd1">Copy</button></div>
       <div class="cmd"><code id="fixCmd2">Check consent on http://localhost:3000 with statute and fix what it finds.</code><button class="btn btn-ghost btn-sm copy" data-copy-from="fixCmd2">Copy</button></div>
-      <p class="small">Prefer it automatic? The <a href="https://github.com/miracle352/statute#put-kane-inside-your-agent">Claude Code hook</a> blocks your agent's "done" until Kane passes. Or add the <a href="https://github.com/miracle352/statute#use-it-in-ci">GitHub Action</a> to check every pull request.</p>
+      <p class="small">Prefer it automatic? The <a href="https://github.com/miracle352/statute#put-kane-inside-your-agent">Claude Code hook</a> blocks your agent's "done" until Kane passes. Or add the <a href="https://github.com/miracle352/statute#use-it-in-ci">GitHub Action</a>: it checks the pull requests that could break a law and watches your live site every night.</p>
     </div>
   </div>
   <p class="quota" id="quota"></p>
@@ -184,6 +184,24 @@
       <div class="acc-body"><div class="acc-inner">
         <img src="assets/replay/step-5.jpg" alt="Kane's screenshot of the demo shop after the fix" loading="lazy" width="1200" height="675">
         <p>Statute restarts the app and sends Kane back. A fix counts only when Kane says so, and Kane also clicks Accept to check the tags still load, so deleting analytics can't pass as a fix.</p>
+      </div></div>
+    </article>
+    <article class="acc-item">
+      <button class="acc-head" aria-expanded="false"><span class="acc-title">Kane keeps watch</span><sup>05</sup><span class="tags"><span>Pull requests</span><span>Every night</span></span><span class="acc-icon" aria-hidden="true"></span></button>
+      <div class="acc-body"><div class="acc-inner">
+        <div class="terminal" role="img" aria-label="Example of Statute's GitHub Action deciding which checks a pull request needs">
+          <div class="term-bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span>git diff main...HEAD | node bin/scope.js</span></div>
+          <pre><span class="dim">pull request</span>
+styles/button.css     <span class="dim">nothing to check, 0 credits</span>
+app/layout.tsx        fbq( <span class="prompt">→ consent</span>
+lib/checkout.ts       fee  <span class="prompt">→ price</span>
+account/cancel.tsx         <span class="prompt">→ cancel</span>
+
+<span class="dim">every night, live site</span>
+Tue 02:17             <span class="bad">violation, issue opened</span>
+Wed 02:17             <span class="good">passes, issue closed</span></pre>
+        </div>
+        <p>A fixed law stays fixed. On every pull request Statute reads the diff and sends Kane only when the change touches tracking, prices or subscriptions. Every night it checks the live site too, because a tag added in Tag Manager never shows up in a pull request. It opens an issue on a violation and closes it when Kane sees the site pass.</p>
       </div></div>
     </article>
   </div>

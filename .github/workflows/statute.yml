@@ -1,5 +1,6 @@
-# Statute checks its own demo shop on every pull request: the shop ships with
-# deliberate bugs, so this job is expected to report violations (fail-on: never).
+# Statute checks its own demo shop on pull requests. check: auto reads the diff and runs only
+# the checks the change could affect; a change to docs or styling runs nothing and costs no credits.
+# The shop ships with deliberate bugs, so a run that does happen is expected to report violations (fail-on: never).
 name: Statute on the demo shop
 on:
   pull_request:
@@ -14,9 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: ./
         with:
-          check: consent
+          check: auto
           url: http://localhost:4173
           start: node demo-store/server.js
           lt-username: ${{ secrets.LT_USERNAME }}

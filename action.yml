@@ -7,10 +7,13 @@ branding:
 
 inputs:
   url:
-    description: Address Kane should visit (a PR preview URL, or a local URL used with `start`).
+    description: Address Kane should visit (a PR preview URL, your production site, or a local URL used with `start`).
     required: true
   check:
-    description: "Which check to run: consent, price or cancel."
+    description: >
+      Which checks to run: consent, price, cancel, several separated by spaces, or auto.
+      auto reads the pull request diff and runs only the checks the change could affect
+      (needs actions/checkout with fetch-depth 0). A change that touches none of them runs nothing and costs no Kane credits.
     default: consent
   start:
     description: Optional command that starts your app on the runner before Kane visits (for example `npm start`).
@@ -27,14 +30,22 @@ inputs:
   comment:
     description: "Post the verdict as a comment on the pull request (needs pull-requests: write)."
     default: "true"
+  issue:
+    description: >
+      Outside pull requests (a schedule, a manual run), open an issue when a check fails and close it
+      once the checks pass again (needs issues: write). Use it to watch your live site.
+    default: "false"
   github-token:
-    description: Token used to comment on the pull request.
+    description: Token used to comment and to open or close issues.
     default: ${{ github.token }}
 
 outputs:
   verdict:
-    description: pass, violation or inconclusive
+    description: pass, violation, inconclusive or skipped
     value: ${{ steps.run.outputs.verdict }}
+  checks:
+    description: The checks that ran, separated by spaces
+    value: ${{ steps.plan.outputs.checks }}
 
 runs:
   using: composite
@@ -43,33 +54,79 @@ runs:
       with:
         node-version: 22
 
+    - name: Pick the checks
+      id: plan
+      shell: bash
+      env:
+        STATUTE_CHECK: ${{ inputs.check }}
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      run: |
+        checks="${STATUTE_CHECK//,/ }"
+        if [ "$checks" = "auto" ]; then
+          if [ -n "$BASE_SHA" ] && git cat-file -e "$BASE_SHA" 2>/dev/null; then
+            git diff "$BASE_SHA"...HEAD > "$RUNNER_TEMP/statute.diff"
+            node "$GITHUB_ACTION_PATH/bin/scope.js" --json < "$RUNNER_TEMP/statute.diff" > "$RUNNER_TEMP/statute-scope.json"
+            checks=$(node -e 'console.log(require(process.argv[1]).checks.join(" "))' "$RUNNER_TEMP/statute-scope.json")
+          else
+            echo "::warning title=Statute::check is auto but the pull request diff is not available (use actions/checkout with fetch-depth: 0). Running every check."
+            checks="consent price cancel"
+          fi
+        fi
+        echo "checks=$checks" >> "$GITHUB_OUTPUT"
+        echo "Checks to run: ${checks:-none}"
+
     - name: Install Kane CLI
+      if: steps.plan.outputs.checks != ''
       shell: bash
       run: npm install -g @testmuai/kane-cli
 
-    - name: Run the check
+    - name: Run the checks
       id: run
       shell: bash
       env:
         LT_USERNAME: ${{ inputs.lt-username }}
         LT_ACCESS_KEY: ${{ inputs.lt-access-key }}
-        STATUTE_CHECK: ${{ inputs.check }}
+        STATUTE_CHECKS: ${{ steps.plan.outputs.checks }}
         STATUTE_URL: ${{ inputs.url }}
         STATUTE_START: ${{ inputs.start }}
       run: |
         set +e
-        args=(check "$STATUTE_CHECK" --url "$STATUTE_URL" --out "$RUNNER_TEMP/statute-report")
-        if [ -n "$STATUTE_START" ]; then args+=(--start "$STATUTE_START"); fi
-        node "$GITHUB_ACTION_PATH/bin/statute.js" "${args[@]}" 2>&1 | tee "$RUNNER_TEMP/statute.log"
-        code=${PIPESTATUS[0]}
-        case $code in 0) v=pass ;; 1) v=violation ;; *) v=inconclusive ;; esac
-        echo "verdict=$v" >> "$GITHUB_OUTPUT"
-        echo "code=$code" >> "$GITHUB_OUTPUT"
-        report="$RUNNER_TEMP/statute-report/$STATUTE_CHECK.md"
-        if [ -f "$report" ]; then sed '1s/^\xEF\xBB\xBF//' "$report" >> "$GITHUB_STEP_SUMMARY"; fi
+        out="$RUNNER_TEMP/statute-report"; mkdir -p "$out"
+        summary="$out/summary.md"; : > "$summary"
+        if [ -z "$STATUTE_CHECKS" ]; then
+          echo "verdict=skipped" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Statute: nothing to check"
+            echo
+            echo "Nothing in this change touches tracking, prices or subscriptions, so Kane was not run. 0 credits used."
+          } > "$summary"
+          if [ -f "$RUNNER_TEMP/statute-scope.json" ]; then
+            echo >> "$summary"
+            echo "Files read: $(node -e 'console.log(require(process.argv[1]).files.length)' "$RUNNER_TEMP/statute-scope.json")" >> "$summary"
+          fi
+          cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+        fi
+        worst=pass
+        for c in $STATUTE_CHECKS; do
+          args=(check "$c" --url "$STATUTE_URL" --out "$out")
+          if [ -n "$STATUTE_START" ]; then args+=(--start "$STATUTE_START"); fi
+          node "$GITHUB_ACTION_PATH/bin/statute.js" "${args[@]}" 2>&1 | tee -a "$RUNNER_TEMP/statute.log"
+          code=${PIPESTATUS[0]}
+          case $code in 0) v=pass ;; 1) v=violation ;; *) v=inconclusive ;; esac
+          if [ "$v" = violation ]; then worst=violation; elif [ "$v" = inconclusive ] && [ "$worst" = pass ]; then worst=inconclusive; fi
+          if [ -f "$RUNNER_TEMP/statute-scope.json" ]; then
+            why=$(node -e 'const r=require(process.argv[1]).reasons[process.argv[2]]||[];console.log(r.slice(0,3).map(x=>"`"+x.file+"` ("+x.why+")").join(", "))' "$RUNNER_TEMP/statute-scope.json" "$c")
+            [ -n "$why" ] && printf '_Ran because this change touches %s._\n\n' "$why" >> "$summary"
+          fi
+          if [ -f "$out/$c.md" ]; then sed '1s/^\xEF\xBB\xBF//' "$out/$c.md" >> "$summary"; else echo "Statute could not finish the **$c** check. See the job log." >> "$summary"; fi
+          printf '\n\n' >> "$summary"
+        done
+        echo "verdict=$worst" >> "$GITHUB_OUTPUT"
+        cat "$summary" >> "$GITHUB_STEP_SUMMARY"
 
     - name: Keep the case file
-      if: always()
+      if: always() && steps.plan.outputs.checks != ''
       uses: actions/upload-artifact@v4
       with:
         name: statute-case-file
@@ -80,26 +137,55 @@ runs:
       if: always() && inputs.comment == 'true' && github.event_name == 'pull_request'
       uses: actions/github-script@v7
       env:
-        STATUTE_CHECK: ${{ inputs.check }}
-        STATUTE_VERDICT: ${{ steps.run.outputs.verdict }}
-        REPORT: ${{ runner.temp }}/statute-report/${{ inputs.check }}.md
+        SUMMARY: ${{ runner.temp }}/statute-report/summary.md
+        HAS_RUN: ${{ steps.plan.outputs.checks != '' }}
       with:
         github-token: ${{ inputs.github-token }}
         script: |
           const fs = require("fs");
           let body = "";
-          try { body = fs.readFileSync(process.env.REPORT, "utf8").replace(/^﻿/, ""); } catch { body = `Statute could not finish the **${process.env.STATUTE_CHECK}** check. See the job log.`; }
+          try { body = fs.readFileSync(process.env.SUMMARY, "utf8"); } catch { body = "Statute could not finish. See the job log."; }
           const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-          body += `\n\n---\nCase file with Kane's screenshots: download **statute-case-file** from [this run](${run}).`;
-          const marker = `<!-- statute:${process.env.STATUTE_CHECK} -->`;
+          if (process.env.HAS_RUN === "true") body += `---\nCase file with Kane's screenshots: download **statute-case-file** from [this run](${run}).`;
+          const marker = "<!-- statute:check -->";
           const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number: context.issue.number, per_page: 100 });
           const mine = comments.find((c) => c.body && c.body.includes(marker));
           if (mine) await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body: marker + "\n" + body });
           else await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body: marker + "\n" + body });
 
+    - name: Open or close the watch issue
+      if: always() && inputs.issue == 'true' && github.event_name != 'pull_request' && steps.plan.outputs.checks != ''
+      uses: actions/github-script@v7
+      env:
+        SUMMARY: ${{ runner.temp }}/statute-report/summary.md
+        VERDICT: ${{ steps.run.outputs.verdict }}
+        URL: ${{ inputs.url }}
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require("fs");
+          const label = "statute";
+          const url = process.env.URL, verdict = process.env.VERDICT;
+          const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          let report = "";
+          try { report = fs.readFileSync(process.env.SUMMARY, "utf8"); } catch {}
+          const { data: open } = await github.rest.issues.listForRepo({ ...context.repo, state: "open", labels: label, per_page: 50 });
+          const mine = open.find((i) => i.title.includes(url));
+          if (verdict === "violation") {
+            const body = `Statute's scheduled check of ${url} found a violation on the live site.\n\n${report}---\nCase file with Kane's screenshots: download **statute-case-file** from [this run](${run}).\n\nThis issue closes itself once the check passes again.`;
+            if (mine) await github.rest.issues.createComment({ ...context.repo, issue_number: mine.number, body: `Still failing. [Run](${run}).\n\n${report}` });
+            else {
+              try { await github.rest.issues.createLabel({ ...context.repo, name: label, color: "b60205", description: "Opened by Statute" }); } catch {}
+              await github.rest.issues.create({ ...context.repo, title: `Statute: live site violation on ${url}`, body, labels: [label] });
+            }
+          } else if (verdict === "pass" && mine) {
+            await github.rest.issues.createComment({ ...context.repo, issue_number: mine.number, body: `Kane checked ${url} again and it passes now. Closing. [Run](${run}).` });
+            await github.rest.issues.update({ ...context.repo, issue_number: mine.number, state: "closed", state_reason: "completed" });
+          }
+
     - name: Fail on a violation
       if: inputs.fail-on == 'violation' && steps.run.outputs.verdict == 'violation'
       shell: bash
       run: |
-        echo "::error title=Statute::Kane found a ${{ inputs.check }} violation. See the job summary and the statute-case-file artifact."
+        echo "::error title=Statute::Kane found a violation. See the job summary and the statute-case-file artifact."
         exit 1

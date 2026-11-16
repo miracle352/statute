@@ -15,7 +15,8 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | 1 min | A live public site, confirmed: cruisinginthewake.com sends 6 Google Analytics hits with a visitor ID before any choice, matching the site's own open issue | [Case file](https://statute-production.up.railway.app/cases/in-the-wake.html) · [their issue #1684](https://github.com/jsschrstrcks1/InTheWake/issues/1684) |
 | 1 min | The Statute Census: 7 of 15 popular European sites kept tracking after Reject, each checked by hand | [Census section](https://statute-production.up.railway.app/#census) |
 | 1 min | Kane inside Claude Code: the agent's "done" blocked until the law holds, in a real session | [Screenshots](#put-kane-inside-your-agent) |
-| 1 min | The GitHub Action commenting a violation on a real pull request | [The PR](https://github.com/miracle352/statute/pulls?q=is%3Apr+%22Test+the+Statute+action%22) |
+| 1 min | The GitHub Action commenting a violation on a real pull request, and skipping the PRs that can't break a law | [The PR](https://github.com/miracle352/statute/pulls?q=is%3Apr+%22Test+the+Statute+action%22) · [how](#on-pull-requests-only-when-it-matters) |
+| 1 min | The nightly watch: Kane checks the live site, opens an issue on a violation, closes it once fixed | [Watch issue](https://github.com/miracle352/statute/issues?q=label%3Astatute) · [how](#on-the-live-site-every-night) |
 | 2 min | Run it yourself with no Kane credits and no login | `git clone https://github.com/miracle352/statute && cd statute && npm run demo` |
 | 10 min | Run the whole loop on your machine (Kane CLI and Claude Code needed, about 31 credits) | `npm run demo:fix` |
 
@@ -74,7 +75,11 @@ The MCP server in the same session: Claude Code called `statute_check` itself an
 
 ## Use it in CI
 
-Add Statute to any repository. Every pull request gets Kane in a real browser, a verdict computed by code, a comment on the PR and the case file as an artifact. The job fails on a violation.
+Statute guards two places: every pull request, and the live site every night.
+
+### On pull requests, only when it matters
+
+With `check: auto`, Statute reads the pull request diff first. Plain pattern matching on the changed lines, no model: a tracker domain from [`rules/trackers.json`](rules/trackers.json), a `gtag(` or `fbq(` call, or cookie and consent code runs the consent check; a fee, price or checkout change runs the price check; subscription or cancellation code runs the cancel check. A change to styles or docs runs nothing, says so on the PR, and costs no Kane credits. When a check does run, the comment says which changed file triggered it.
 
 ```yaml
 # .github/workflows/statute.yml
@@ -87,18 +92,50 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0                 # auto needs the diff
       - uses: miracle352/statute@main
         with:
-          check: consent                 # or price, cancel
+          check: auto                    # or consent, price, cancel, or several: "consent price"
           url: http://localhost:3000     # or your PR preview URL
           start: npm ci && npm start     # leave out when checking a preview URL
           lt-username: ${{ secrets.LT_USERNAME }}
           lt-access-key: ${{ secrets.LT_ACCESS_KEY }}
 ```
 
-See it on a real pull request in this repository: [the PR](https://github.com/miracle352/statute/pulls?q=is%3Apr+%22Test+the+Statute+action%22) where the Action ran on the demo shop and commented the violation.
+You can try the classifier on any diff: `git diff main...HEAD | node bin/scope.js --json`.
 
-Set `LT_USERNAME` and `LT_ACCESS_KEY` as repository secrets (your TestMu AI username and access key). Each run costs Kane credits, about 20 to 40 per check. This repository runs the Action on its own demo shop in [`.github/workflows/statute.yml`](.github/workflows/statute.yml); the shop ships with its bugs on purpose, so that job reports violations without failing.
+### On the live site, every night
+
+Half of what breaks these laws never goes through a pull request: a tag added in Google Tag Manager, a fee switched on in a payments dashboard, a consent tool's settings changed. Run the same Action on a schedule against production with `issue: "true"`. On a violation it opens an issue with Kane's report; while it keeps failing it adds a comment; once Kane sees the site pass again it closes the issue by itself.
+
+```yaml
+# .github/workflows/statute-watch.yml
+on:
+  schedule:
+    - cron: "17 2 * * *"
+permissions:
+  contents: read
+  issues: write
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: miracle352/statute@main
+        with:
+          url: https://your-site.example
+          check: consent price
+          issue: "true"
+          fail-on: never
+          lt-username: ${{ secrets.LT_USERNAME }}
+          lt-access-key: ${{ secrets.LT_ACCESS_KEY }}
+```
+
+This repository runs both on itself: [`statute.yml`](.github/workflows/statute.yml) on pull requests and [`statute-watch.yml`](.github/workflows/statute-watch.yml) every night against the demo shop on the live site. The shop ships with its bugs on purpose, so the watch keeps an issue open: [the watch issue](https://github.com/miracle352/statute/issues?q=label%3Astatute).
+
+See the PR comment on a real pull request: [the PR](https://github.com/miracle352/statute/pulls?q=is%3Apr+%22Test+the+Statute+action%22).
+
+Set `LT_USERNAME` and `LT_ACCESS_KEY` as repository secrets (your TestMu AI username and access key). Each check that runs costs Kane credits, about 20 to 40.
 
 ## The live site
 
@@ -157,6 +194,7 @@ To host it: the `Dockerfile` installs Chrome and Kane CLI. Set `LT_USERNAME` and
     bin/statute.js       check, fix, replay
     bin/mcp.js           Statute as an MCP server for coding agents
     bin/hook.js          Statute as a Claude Code Stop hook
+    bin/scope.js         reads a diff and picks the checks it could affect (check: auto)
     bin/census.js        the Census runner, --rejudge
     server/              the live site, audit queue, Chrome and its live view
     demo-store/          Lumen, a shop with deliberate compliance bugs

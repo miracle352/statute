@@ -28,7 +28,19 @@ function cloudEndpoint({ country, username, accessKey, name }) {
 }
 
 function run(objective, { headless = true, maxSteps = 25, timeout = 300, onEvent, cdpEndpoint, wsEndpoint, username, accessKey } = {}) {
-  if (wsEndpoint) return runArgs(["run", objective, "--agent", "--max-steps", String(Number(maxSteps)), "--timeout", String(Number(timeout)), "--ws-endpoint", wsEndpoint, ...(username ? ["--username", username, "--access-key", accessKey] : [])], onEvent, timeout);
+  // Preferred path: start kane-cli directly, with no shell, so the objective can
+  // contain any character. The shell path below is only a fallback.
+  if (findKane()) {
+    const args = ["run", objective, "--agent", "--max-steps", String(Number(maxSteps)), "--timeout", String(Number(timeout))];
+    if (wsEndpoint) args.push("--ws-endpoint", wsEndpoint);
+    else if (cdpEndpoint) {
+      if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(cdpEndpoint)) throw new Error("bad CDP endpoint");
+      args.push("--cdp-endpoint", cdpEndpoint);
+    } else if (headless) args.push("--headless");
+    if (username || accessKey) args.push("--username", String(username || ""), "--access-key", String(accessKey || ""));
+    return runArgs(args, onEvent, timeout);
+  }
+  if (wsEndpoint) throw new Error("Could not find kane-cli's install folder (npm root -g), which cloud runs need.");
   // The objective goes through the shell inside double quotes, so refuse anything
   // that could break out of them (cmd.exe and sh metacharacters).
   if (/["%^&|<>`$\\]/.test(objective)) {

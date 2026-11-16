@@ -14,6 +14,7 @@ const PACKS = {
   consent,
   "consent-accept": require("../src/packs/consent-accept"),
   cancel: require("../src/packs/cancel"),
+  price: require("../src/packs/price"),
 };
 
 const DATA = process.env.STATUTE_DATA || path.join(__dirname, "..", "data");

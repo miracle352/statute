@@ -19,6 +19,7 @@ const PACKS = {
   consent: require("../src/packs/consent"),
   "consent-accept": require("../src/packs/consent-accept"),
   cancel: require("../src/packs/cancel"),
+  price: require("../src/packs/price"),
 };
 const ROOT = path.resolve(__dirname, "..");
 
@@ -50,6 +51,9 @@ async function check(pack, { url, out, start, cwd, show }) {
       headless: !show,
       maxSteps: Number(arg("max-steps", 25)),
       timeout: Number(arg("timeout", 300)),
+      // CI and servers sign in with keys from the environment; locally, kane-cli login is used.
+      username: process.env.LT_USERNAME || undefined,
+      accessKey: process.env.LT_ACCESS_KEY || undefined,
       onEvent: (e) => { if (e.step && e.status && e.status !== "running") console.log(`  step ${e.step} ${e.status}: ${e.remark || ""}`); },
     });
     if (!res.end) throw new Error("Kane ended without a result.\n" + res.stderr.slice(-1500));
@@ -167,7 +171,7 @@ function replay(only) {
   if (!names.length) { console.error("No recorded runs found in replays/."); process.exit(1); }
   for (const name of names) {
     const src = path.join(base, name);
-    const out = path.join(ROOT, "statute-report", "replay", name);
+    const out = path.join(process.cwd(), "statute-report", "replay", name);
     fs.mkdirSync(out, { recursive: true });
     fs.copyFileSync(path.join(src, "loop.json"), path.join(out, "loop.json"));
     fs.cpSync(path.join(src, "evidence"), path.join(out, "evidence"), { recursive: true });

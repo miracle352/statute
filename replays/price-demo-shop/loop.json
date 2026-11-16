@@ -1,0 +1,43 @@
+{
+  "pack": "price",
+  "url": "http://localhost:4173",
+  "app": "demo-store",
+  "strict": true,
+  "timeline": [
+    {
+      "round": 1,
+      "step": "kane",
+      "pack": "price",
+      "verdict": "violation",
+      "why": "Kane read the prices: the product page showed \u20ac49.00 and the checkout total was \u20ac53.99. The checkout listed Service fee \u2014 4.99. Apart from shipping and tax, 4.99 more than the shown price was added at checkout (Service fee \u2014).",
+      "run": "https://test-manager.lambdatest.com/projects/01M7E4JR87M8V8X3PY5SPEP2E6/test-cases/01M7J9W85TNF386QH2VY1KNQCM/dashboard/share/US_3OSKAIFMOWW9YZYRBMV99K5R8C8ZN71ILHVHDR0MEEVFCVIVHXI23K6GZ9J8LGGH?type=summary&agentView=true&fqdn=summary-page",
+      "evidence": "evidence/price-1794837093949.evidence",
+      "credits": 40.50791250000001,
+      "kaneStatus": "passed",
+      "kaneSummary": "You asked to open the first product, add it to the cart, and proceed to checkout without paying.\nA cookie banner appeared and all cookies were rejected.\nThe first product was opened; its listed price was \u20ac49.00.\nThe product was added to the cart and checkout was reached, stopping before payment.\nThe checkout total is \u20ac53.99, including a Service fee of \u20ac4.99.",
+      "at": "2026-11-16T13:51:34.550Z"
+    },
+    {
+      "round": 1,
+      "step": "agent",
+      "agent": "claude-code",
+      "summary": "Problem: `server.js` added a \u20ac4.99 \"Service fee\" only at checkout, so the \u20ac49.00 product price turned into \u20ac53.99 at the last step.\n\nFix: I removed the hidden fee (the `SERVICE_FEE` constant and its checkout line), so checkout now totals \u20ac49.00, the same as the product page and cart. `node --check` passes; I haven't re-run the Kane check.",
+      "at": "2026-11-16T13:52:04.391Z"
+    },
+    {
+      "round": 2,
+      "step": "kane",
+      "pack": "price",
+      "verdict": "pass",
+      "why": "Kane read the prices: the product page showed \u20ac49.00 and the checkout total was \u20ac49.00. Apart from shipping and tax, the shopper pays the price they were shown.",
+      "run": "https://test-manager.lambdatest.com/projects/01M7E4JR87M8V8X3PY5SPEP2E6/test-cases/01M7JA2BXGW918DSW7ZAY84FR9/dashboard/share/US_RG2Q79RQ697NKGPMVB186IBFL2IIUPNYO7FHVW8I2NKESU01TUKL2WC0PWK5BLA0?type=summary&agentView=true&fqdn=summary-page",
+      "evidence": "evidence/price-1794837311639.evidence",
+      "credits": 37.3534525,
+      "kaneStatus": "passed",
+      "kaneSummary": "You asked to open the first product, add it to the cart, and proceed to checkout without making a payment.\nA cookie banner appeared and its cookies were rejected.\nThe first product, Halo Desk Lamp, was opened; its displayed price was \u20ac49.00.\nThe product was added to the cart and checkout was opened.\nThe run stopped on the checkout review page before payment. The total to pay was \u20ac49.00, with no additional lines listed between the product and the total.",
+      "at": "2026-11-16T13:55:12.229Z"
+    }
+  ],
+  "credits": 77.861365,
+  "title": "Lumen demo shop: Kane finds a fee that only appears at checkout; Claude Code removes it; Kane proves the shopper pays the price shown"
+}

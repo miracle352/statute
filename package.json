@@ -15,10 +15,25 @@
     "census": "node bin/census.js",
     "demo:hax": "node bin/statute.js fix consent --url http://localhost:8095/ --start \"node bin/serve.js 8095 examples/haxcms\" --app examples/haxcms",
     "demo:hax-reset": "node -e \"for (const f of ['index.html','ghpages.html']) require('fs').copyFileSync('examples/haxcms/.original/'+f,'examples/haxcms/'+f)\"",
-    "demo": "node bin/statute.js replay"
+    "demo": "node bin/statute.js replay",
+    "check:price": "node bin/statute.js check price --url http://localhost:4173 --start \"node demo-store/server.js\"",
+    "demo:fix-price": "node bin/statute.js fix price --url http://localhost:4173 --start \"node demo-store/server.js\" --app demo-store"
   },
   "engines": {
     "node": ">=22"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "files": [
+    "bin",
+    "src",
+    "rules",
+    "server",
+    "site",
+    "demo-store",
+    "examples",
+    "replays",
+    "census/results.json",
+    "Dockerfile",
+    "README.md"
+  ]
 }

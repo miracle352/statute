@@ -200,6 +200,28 @@ function build({ out, packs, url = "" }) {
     ${shot(first.shots[first.shots.length - 1], first.key, "Where Kane's attempt to cancel ended.")}
   </div>`,
     },
+    price: {
+      headline: {
+        fixed: "Kane found a fee that only appeared at checkout. Claude Code fixed it. Kane proved the shopper now pays the price they were shown.",
+        violation: "Kane found a fee that only appeared at checkout.",
+        pass: "Kane paid the price it was shown, apart from shipping and tax.",
+      },
+      stat: () => {
+        const e = (r) => (r && r.extra != null ? r.extra.toFixed(2) : "—");
+        return [`${e(first && first.result)} → ${e(lastMain && lastMain.result)}`, "added at checkout beyond the shown price"];
+      },
+      exhibit: () => `
+  <div class="ex-grid">
+    <div>
+      <p class="lead">${esc(first.result.why)}</p>
+      <div class="paths">
+        <div><h4>Shown on the product page</h4><ol><li class="mono">${esc((first.result.readings || {}).product_price || "—")}</li></ol></div>
+        <div class="bad"><h4>Total at checkout</h4><ol><li class="mono">${esc((first.result.readings || {}).checkout_total || "—")}</li>${first.result.shipping ? `<li>shipping ${first.result.shipping.toFixed(2)}</li>` : ""}${first.result.tax ? `<li>tax ${first.result.tax.toFixed(2)}</li>` : ""}</ol></div>
+      </div>
+    </div>
+    ${shot(first.shots[first.shots.length - 1], first.key, "The checkout page Kane read the total from.")}
+  </div>`,
+    },
   };
   const view = views[main.id] || views.consent;
   const headline = view.headline[status] || "This run could not prove anything either way.";

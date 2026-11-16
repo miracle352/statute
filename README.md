@@ -6,7 +6,7 @@ Paste a website. Kane CLI opens it in a real Chrome, clicks Reject on the cookie
 
 Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19 November 2026).
 
-## Judges, start here
+## Start here
 
 | Time | What | Where |
 |---|---|---|
@@ -16,7 +16,7 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | 2 min | Run it yourself with no Kane credits and no login | `git clone https://github.com/miracle352/statute && cd statute && npm run demo` |
 | 10 min | Run the whole loop on your machine (Kane CLI and Claude Code needed, about 31 credits) | `npm run demo:fix` |
 
-`npm run demo` needs only Node 22. It re-judges two recorded loops (the demo shop and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
+`npm run demo` needs only Node 22. It re-judges three recorded loops (the demo shop's Reject and price checks, and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
 
 ## The checks
 
@@ -25,6 +25,7 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | Reject means reject | After a visitor refuses cookies, no analytics or ads tag may load and no visitor ID may leave the browser. | ePrivacy Directive 2002/58/EC Art. 5(3); GDPR Art. 4(11) and Art. 7; California Civil Code §1798.120 |
 | Accept still works | After Accept, the site's tags load. This is the guard that stops an agent from "fixing" the first check by deleting analytics. | |
 | Cancel as easy as signup | A subscription started online can be cancelled online, in no more steps than it took to start. | Cal. Bus. & Prof. Code §17602; German Civil Code §312k; EU Directive 2023/2673 Art. 11a |
+| The price shown is the price paid | Kane reads the price on the product page and the total at checkout; code compares them after taking off shipping and tax. | California Civil Code §1770(a)(29) (SB 478); UK DMCC Act 2024 s.230; EU Directive 2011/83/EU Art. 6(1)(e) |
 
 ## How a verdict is made
 
@@ -32,6 +33,32 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 2. **Code judges.** `src/packs/consent.js` reads the pack. It finds the moment of the Reject click in Kane's action log, splits every request into before and after that moment, and matches hosts against a tracker list (`rules/trackers.json`). It pulls Google Analytics client IDs out of `/g/collect` hits, so "the same visitor ID went out after Reject" is a fact from the traffic, not a guess. Two things are shown but not counted: Google Consent Mode hits that say consent was denied, and Google Tag Manager's own code loading with no measurement hit.
 3. **Your agent fixes.** `statute fix` hands the report, the rule and the law to Claude Code (`claude -p`, edit tools only, working in your app's folder). It restarts your app and sends Kane back.
 4. **Kane proves.** The loop stops when Reject passes *and* Accept still loads the tags, or after three rounds. The case file shows every round with Kane's screenshots and share links.
+
+## Use it in CI
+
+Add Statute to any repository. Every pull request gets Kane in a real browser, a verdict computed by code, a comment on the PR and the case file as an artifact. The job fails on a violation.
+
+```yaml
+# .github/workflows/statute.yml
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  statute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: miracle352/statute@main
+        with:
+          check: consent                 # or price, cancel
+          url: http://localhost:3000     # or your PR preview URL
+          start: npm ci && npm start     # leave out when checking a preview URL
+          lt-username: ${{ secrets.LT_USERNAME }}
+          lt-access-key: ${{ secrets.LT_ACCESS_KEY }}
+```
+
+Set `LT_USERNAME` and `LT_ACCESS_KEY` as repository secrets (your TestMu AI username and access key). Each run costs Kane credits, about 20 to 40 per check. This repository runs the Action on its own demo shop in [`.github/workflows/statute.yml`](.github/workflows/statute.yml); the shop ships with its bugs on purpose, so that job reports violations without failing.
 
 ## The live site
 
@@ -56,6 +83,7 @@ Guard rails: public `http`/`https` sites only (private, internal and metadata ad
 - **Kane proves the law, not the whole change.** On HAXCMS, Claude Code's fix passed both Kane checks but showed the banner on sites with no Google Analytics ID at all, which the issue says should stay unchanged. Kane only tested a site that had an ID. A person caught it, and the upstream PR uses a version that skips the banner when there is no ID.
 - **My setup mistake, caught by the loop.** On the first HAXCMS run I had left an already-fixed copy of one template file in the example folder, and Claude Code copied it. Its own report said so. I restored the original files, moved my patch out of the folder and ran the loop again; the second run is the one published.
 - **Location matters.** Run from Nigeria, most European sites showed no banner at all, so they could not be judged. That is why the Census switched to in-country cloud browsers. After 16 sessions the cloud browsers stopped accepting new runs on this account, so 9 sites outside Europe were never run.
+- **Kane once filed a fee as shipping.** The first version of the price check asked Kane for "the shipping cost", and Kane put the shop's €4.99 service fee there, so the check passed when it should have failed. Now Kane only copies each checkout line with the shop's own name for it, and code decides which lines are shipping or tax.
 - **Kane's own timeout is not always kept.** One cloud run hung for hours. Every Kane run now has a hard limit (`src/kane.js`), and the run is recorded as not judged.
 - **Some sites block automated browsers.** Those are listed as not judged, never as passes.
 
@@ -68,6 +96,8 @@ Node 22, [Kane CLI](https://www.npmjs.com/package/@testmuai/kane-cli) (`npm i -g
     npm run check:consent     one Reject check on the demo shop
     npm run demo:fix          find, fix and prove on the demo shop
     npm run demo:reset        put the demo shop's bugs back
+    npm run check:price       one price check on the demo shop
+    npm run demo:fix-price    find, fix and prove the hidden checkout fee
     npm run demo:hax          find, fix and prove on the HAXCMS template
     npm run demo:hax-reset    put HAXCMS's original files back
 
@@ -80,7 +110,7 @@ To host it: the `Dockerfile` installs Chrome and Kane CLI. Set `LT_USERNAME` and
 
     src/kane.js          runs kane-cli, reads its event stream, hard time limit
     src/evidence.js      reads Kane evidence packs (HAR, action log, screenshots)
-    src/packs/           the checks: consent, consent-accept, cancel
+    src/packs/           the checks: consent, consent-accept, cancel, price
     src/agent.js         hands a report to Claude Code
     src/page.js          builds the case file from sealed evidence
     bin/statute.js       check, fix, replay

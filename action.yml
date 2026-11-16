@@ -1,0 +1,105 @@
+name: Statute
+description: Kane CLI checks a site against consumer law in a real browser; code judges the evidence. Fails on a violation.
+author: miracle352
+branding:
+  icon: check-circle
+  color: green
+
+inputs:
+  url:
+    description: Address Kane should visit (a PR preview URL, or a local URL used with `start`).
+    required: true
+  check:
+    description: "Which check to run: consent, price or cancel."
+    default: consent
+  start:
+    description: Optional command that starts your app on the runner before Kane visits (for example `npm start`).
+    default: ""
+  lt-username:
+    description: TestMu AI username, for Kane CLI. Pass it from a repository secret.
+    required: true
+  lt-access-key:
+    description: TestMu AI access key, for Kane CLI. Pass it from a repository secret.
+    required: true
+  fail-on:
+    description: "violation (default) fails the job on a violation; never only reports."
+    default: violation
+  comment:
+    description: "Post the verdict as a comment on the pull request (needs pull-requests: write)."
+    default: "true"
+  github-token:
+    description: Token used to comment on the pull request.
+    default: ${{ github.token }}
+
+outputs:
+  verdict:
+    description: pass, violation or inconclusive
+    value: ${{ steps.run.outputs.verdict }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    - name: Install Kane CLI
+      shell: bash
+      run: npm install -g @testmuai/kane-cli
+
+    - name: Run the check
+      id: run
+      shell: bash
+      env:
+        LT_USERNAME: ${{ inputs.lt-username }}
+        LT_ACCESS_KEY: ${{ inputs.lt-access-key }}
+        STATUTE_CHECK: ${{ inputs.check }}
+        STATUTE_URL: ${{ inputs.url }}
+        STATUTE_START: ${{ inputs.start }}
+      run: |
+        set +e
+        args=(check "$STATUTE_CHECK" --url "$STATUTE_URL" --out "$RUNNER_TEMP/statute-report")
+        if [ -n "$STATUTE_START" ]; then args+=(--start "$STATUTE_START"); fi
+        node "$GITHUB_ACTION_PATH/bin/statute.js" "${args[@]}" 2>&1 | tee "$RUNNER_TEMP/statute.log"
+        code=${PIPESTATUS[0]}
+        case $code in 0) v=pass ;; 1) v=violation ;; *) v=inconclusive ;; esac
+        echo "verdict=$v" >> "$GITHUB_OUTPUT"
+        echo "code=$code" >> "$GITHUB_OUTPUT"
+        report="$RUNNER_TEMP/statute-report/$STATUTE_CHECK.md"
+        if [ -f "$report" ]; then sed '1s/^\xEF\xBB\xBF//' "$report" >> "$GITHUB_STEP_SUMMARY"; fi
+
+    - name: Keep the case file
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: statute-case-file
+        path: ${{ runner.temp }}/statute-report
+        if-no-files-found: ignore
+
+    - name: Comment on the pull request
+      if: always() && inputs.comment == 'true' && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      env:
+        STATUTE_CHECK: ${{ inputs.check }}
+        STATUTE_VERDICT: ${{ steps.run.outputs.verdict }}
+        REPORT: ${{ runner.temp }}/statute-report/${{ inputs.check }}.md
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require("fs");
+          let body = "";
+          try { body = fs.readFileSync(process.env.REPORT, "utf8").replace(/^﻿/, ""); } catch { body = `Statute could not finish the **${process.env.STATUTE_CHECK}** check. See the job log.`; }
+          const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          body += `\n\n---\nCase file with Kane's screenshots: download **statute-case-file** from [this run](${run}).`;
+          const marker = `<!-- statute:${process.env.STATUTE_CHECK} -->`;
+          const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number: context.issue.number, per_page: 100 });
+          const mine = comments.find((c) => c.body && c.body.includes(marker));
+          if (mine) await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body: marker + "\n" + body });
+          else await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body: marker + "\n" + body });
+
+    - name: Fail on a violation
+      if: inputs.fail-on == 'violation' && steps.run.outputs.verdict == 'violation'
+      shell: bash
+      run: |
+        echo "::error title=Statute::Kane found a ${{ inputs.check }} violation. See the job summary and the statute-case-file artifact."
+        exit 1

@@ -60,6 +60,8 @@ function networkFromPack(packPath) {
           intent: a.intent || "",
           status: a.status,
           time: a.timestamp,
+          outputVariable: a.output_variable || null,
+          outputValue: a.output_value == null ? null : a.output_value,
         });
       } catch { /* skip */ }
     }

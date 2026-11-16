@@ -39,11 +39,12 @@ function parseDiff(text) {
     if (!cur) continue;
     if ((line.startsWith("+") && !line.startsWith("+++")) || (line.startsWith("-") && !line.startsWith("---"))) cur.lines.push(line.slice(1));
   }
-  return files.filter((f) => !IGNORE.test(f.file));
+  return files;
 }
 
 function scope(diffText) {
-  const files = parseDiff(diffText);
+  const all = parseDiff(diffText);
+  const files = all.filter((f) => !IGNORE.test(f.file));
   const hits = {};
   for (const [check, rules] of Object.entries(RULES)) {
     for (const f of files) {
@@ -56,7 +57,7 @@ function scope(diffText) {
       }
     }
   }
-  return { files: files.map((f) => f.file), checks: Object.keys(hits), reasons: hits };
+  return { changed: all.map((f) => f.file), files: files.map((f) => f.file), checks: Object.keys(hits), reasons: hits };
 }
 
 if (require.main === module) {

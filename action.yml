@@ -102,7 +102,7 @@ runs:
           } > "$summary"
           if [ -f "$RUNNER_TEMP/statute-scope.json" ]; then
             echo >> "$summary"
-            echo "Files read: $(node -e 'console.log(require(process.argv[1]).files.length)' "$RUNNER_TEMP/statute-scope.json")" >> "$summary"
+            node -e 'const r=require(process.argv[1]);const l=r.changed.slice(0,8).map(f=>"`"+f+"`").join(", ");console.log("Changed: "+(l||"no files")+(r.changed.length>8?", and "+(r.changed.length-8)+" more":"")+".")' "$RUNNER_TEMP/statute-scope.json" >> "$summary"
           fi
           cat "$summary" >> "$GITHUB_STEP_SUMMARY"
           exit 0

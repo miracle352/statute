@@ -42,7 +42,12 @@ function write(outDir, pack, result, meta) {
   }
   if (result.verdict === "violation") lines.push("## How to fix", "", pack.fixHint, "");
   lines.push("## Evidence", "");
-  if (meta.evidence) lines.push(`- Sealed Kane evidence pack: \`${meta.evidence}\` (open with \`kane-cli evidence serve <path>\`)`);
+  if (meta.evidence) {
+    const name = String(meta.evidence).split(/[\\/]/).pop();
+    lines.push(process.env.GITHUB_ACTIONS
+      ? `- Sealed Kane evidence pack: \`evidence/${name}\` inside the **statute-case-file** artifact (open with \`kane-cli evidence serve <path>\`)`
+      : `- Sealed Kane evidence pack: \`${meta.evidence}\` (open with \`kane-cli evidence serve <path>\`)`);
+  }
   if (meta.testUrl) lines.push(`- Kane run: ${meta.testUrl}`);
   if (meta.kaneStatus === "failed") lines.push(`- Kane's run ended early (${String(meta.kaneSummary || "no reason given").split("\n")[0]}); the verdict uses what it recorded up to that point.`);
   if (meta.credits != null) lines.push(`- Credits used: ${Number(meta.credits).toFixed(1)}`);

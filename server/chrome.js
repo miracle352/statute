@@ -41,13 +41,24 @@ async function launch() {
   if (process.platform === "linux") args.unshift("--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu");
   // Small servers (512 MB): fewer renderer processes, no background work.
   if (process.env.LOW_MEMORY) args.unshift("--renderer-process-limit=2", "--disable-background-networking", "--disable-component-update", "--disable-features=Translate,OptimizationHints,MediaRouter", "--js-flags=--max-old-space-size=192");
-  const proc = spawn(findChrome(), args, { stdio: "ignore" });
+  const bin = findChrome();
+  const proc = spawn(bin, args, { stdio: ["ignore", "ignore", "pipe"] });
+  let errText = "", exited = null;
+  proc.stderr.on("data", (d) => { errText = (errText + d).slice(-4000); });
+  proc.on("exit", (code, sig) => { exited = sig || code; });
+  proc.on("error", (e) => { exited = e.message; });
   const endpoint = `http://127.0.0.1:${port}`;
   let info;
-  for (let i = 0; i < 60; i++) {
+  // A cold container can take a while to start Chrome the first time.
+  for (let i = 0; i < 160 && exited === null; i++) {
     try { info = await (await fetch(`${endpoint}/json/version`)).json(); break; } catch { await new Promise((r) => setTimeout(r, 250)); }
   }
-  if (!info) { proc.kill(); throw new Error("Chrome did not start"); }
+  if (!info) {
+    try { proc.kill(); } catch {}
+    const why = errText.split("\n").map((l) => l.trim()).filter((l) => l && !/^\[.*(dbus|Fontconfig|gpu_|viz_main)/i.test(l)).slice(-4).join(" | ");
+    console.error("Chrome did not start", bin, exited, "\n" + errText);
+    throw new Error(`Chrome did not start${exited !== null ? ` (exited: ${exited})` : " within 40 s"}${why ? ": " + why.slice(0, 400) : ""}`);
+  }
   const close = () => {
     try { proc.kill(); } catch {}
     setTimeout(() => { try { fs.rmSync(dir, { recursive: true, force: true }); } catch {} }, 1500);

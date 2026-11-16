@@ -7,3 +7,4 @@ census/private/
 _deploy/
 .tmpimg/
 *.evidence
+_hx.tgz

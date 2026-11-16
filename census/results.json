@@ -1,10 +1,10 @@
 {
   "summary": {
-    "generated": "2026-11-15T23:12:31.893Z",
+    "generated": "2026-11-16T12:16:57.276Z",
     "sites": 31,
     "judged": 15,
-    "violations": 8,
-    "passed": 7,
+    "violations": 7,
+    "passed": 8,
     "noBanner": 0,
     "blocked": 7,
     "notJudged": 16,
@@ -21,16 +21,15 @@
       "verdict": "pass",
       "bannerShown": true,
       "blocked": false,
-      "afterReject": 8,
-      "beforeChoice": 4,
+      "afterReject": 0,
+      "beforeChoice": 0,
       "visitorIds": 0,
       "repeatedIds": false,
       "cookieless": 8,
-      "trackers": [
-        "googletagmanager.com"
-      ],
+      "trackers": [],
       "credits": 23.184507500000002,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "A German department store",
@@ -45,25 +44,25 @@
       "repeatedIds": false,
       "cookieless": 0,
       "trackers": [],
-      "credits": 47.18213499999999
+      "credits": 47.18213499999999,
+      "review": null
     },
     {
       "label": "A German recipe site",
       "country": "Germany",
       "category": "recipe site",
-      "verdict": "violation",
+      "verdict": "pass",
       "bannerShown": true,
       "blocked": false,
       "afterReject": 0,
-      "beforeChoice": 2,
+      "beforeChoice": 0,
       "visitorIds": 0,
       "repeatedIds": false,
       "cookieless": 0,
-      "trackers": [
-        "googletagmanager.com"
-      ],
+      "trackers": [],
       "credits": 37.514292499999996,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": "was flagged at first; only Google Tag Manager's code loaded and no data was sent, so it now counts as held up."
     },
     {
       "label": "A German tech news site",
@@ -78,7 +77,8 @@
       "repeatedIds": false,
       "cookieless": 0,
       "trackers": [],
-      "credits": 41.6080425
+      "credits": 41.6080425,
+      "review": null
     },
     {
       "label": "A French electronics retailer",
@@ -94,7 +94,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 12.779990000000002,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "A French classifieds site",
@@ -110,7 +111,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 8.482669999999999,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "A French recipe site",
@@ -119,19 +121,19 @@
       "verdict": "violation",
       "bannerShown": true,
       "blocked": false,
-      "afterReject": 12,
-      "beforeChoice": 2,
+      "afterReject": 8,
+      "beforeChoice": 0,
       "visitorIds": 0,
       "repeatedIds": false,
       "cookieless": 0,
       "trackers": [
-        "googletagmanager.com",
         "doubleclick.net",
         "criteo.com",
         "googlesyndication.com"
       ],
       "credits": 23.9766525,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": "strong. Ad auctions (Criteo, Google ads) ran after Reject."
     },
     {
       "label": "A French news site",
@@ -146,7 +148,8 @@
       "repeatedIds": false,
       "cookieless": 0,
       "trackers": [],
-      "credits": 36.5659975
+      "credits": 36.5659975,
+      "review": null
     },
     {
       "label": "A Dutch online marketplace",
@@ -162,7 +165,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 11.7506025,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "A Dutch news site",
@@ -171,17 +175,17 @@
       "verdict": "violation",
       "bannerShown": true,
       "blocked": false,
-      "afterReject": 18,
-      "beforeChoice": 1,
+      "afterReject": 10,
+      "beforeChoice": 0,
       "visitorIds": 0,
       "repeatedIds": false,
       "cookieless": 0,
       "trackers": [
-        "googletagmanager.com",
         "scorecardresearch.com"
       ],
       "credits": 37.14825,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": "strong. Comscore measurement beacons kept firing after Reject."
     },
     {
       "label": "A Spanish news site",
@@ -200,7 +204,8 @@
         "doubleclick.net"
       ],
       "credits": 18.6265575,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": "moderate. AppNexus and DoubleClick ID-sync requests before any choice; the banner only offers 'subscribe and decline'."
     },
     {
       "label": "A Spanish department store",
@@ -216,7 +221,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 12.567705,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "An Italian news site",
@@ -226,17 +232,17 @@
       "bannerShown": true,
       "blocked": false,
       "afterReject": 1,
-      "beforeChoice": 9,
+      "beforeChoice": 7,
       "visitorIds": 1,
       "repeatedIds": false,
       "cookieless": 0,
       "trackers": [
         "doubleclick.net",
-        "googletagmanager.com",
         "google-analytics.com",
         "connect.facebook.net"
       ],
-      "credits": 20.0646
+      "credits": 20.0646,
+      "review": "strong. The same Google Analytics visitor ID was sent before and after Reject."
     },
     {
       "label": "An Italian classifieds site",
@@ -245,18 +251,18 @@
       "verdict": "violation",
       "bannerShown": true,
       "blocked": false,
-      "afterReject": 13,
-      "beforeChoice": 9,
+      "afterReject": 4,
+      "beforeChoice": 5,
       "visitorIds": 0,
       "repeatedIds": false,
       "cookieless": 2,
       "trackers": [
         "doubleclick.net",
-        "googletagmanager.com",
         "googlesyndication.com"
       ],
       "credits": 20.792054999999998,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": "strong. Google ad requests and a DoubleClick hit after Reject."
     },
     {
       "label": "A Polish online marketplace",
@@ -272,7 +278,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 14.212462499999999,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "A Swedish news site",
@@ -289,7 +296,8 @@
       "trackers": [
         "adnxs.com"
       ],
-      "credits": 33.206844999999994
+      "credits": 33.206844999999994,
+      "review": "weak. One AppNexus request before any choice; Kane clicked 'Manage cookies' rather than a reject button."
     },
     {
       "label": "An Irish broadcaster",
@@ -304,7 +312,8 @@
       "repeatedIds": false,
       "cookieless": 0,
       "trackers": [],
-      "credits": 22.831274999999998
+      "credits": 22.831274999999998,
+      "review": null
     },
     {
       "label": "A British news site",
@@ -319,7 +328,8 @@
       "repeatedIds": false,
       "cookieless": 0,
       "trackers": [],
-      "credits": 21.373700000000003
+      "credits": 21.373700000000003,
+      "review": null
     },
     {
       "label": "A British fashion retailer",
@@ -328,18 +338,18 @@
       "verdict": "violation",
       "bannerShown": true,
       "blocked": false,
-      "afterReject": 7,
-      "beforeChoice": 2,
+      "afterReject": 6,
+      "beforeChoice": 0,
       "visitorIds": 0,
       "repeatedIds": false,
       "cookieless": 0,
       "trackers": [
-        "googletagmanager.com",
         "doubleclick.net",
         "googlesyndication.com"
       ],
       "credits": 18.3965375,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": "moderate. DoubleClick and Google ad scripts loaded after Reject; no visitor ID seen."
     },
     {
       "label": "A British department store",
@@ -348,16 +358,15 @@
       "verdict": "pass",
       "bannerShown": null,
       "blocked": false,
-      "afterReject": 1,
-      "beforeChoice": 1,
+      "afterReject": 0,
+      "beforeChoice": 0,
       "visitorIds": 0,
       "repeatedIds": false,
       "cookieless": 2,
-      "trackers": [
-        "googletagmanager.com"
-      ],
+      "trackers": [],
       "credits": 37.4665625,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "An American online marketplace",
@@ -373,7 +382,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 9.086115,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "An American news site",
@@ -396,13 +406,13 @@
         "googlesyndication.com",
         "px.ads.linkedin.com",
         "taboola.com",
-        "googletagmanager.com",
         "amazon-adsystem.com",
         "scorecardresearch.com",
         "ct.pinterest.com"
       ],
       "credits": 16.326077500000004,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "An American crypto platform",
@@ -418,7 +428,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 0,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "An Indian online marketplace",
@@ -434,7 +445,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 0,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "A Japanese online marketplace",
@@ -450,7 +462,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 0,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "A Nigerian online marketplace",
@@ -466,7 +479,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 0,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "A South African online retailer",
@@ -482,7 +496,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 0,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "A South African news site",
@@ -498,7 +513,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 0,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "An Argentine online marketplace",
@@ -514,7 +530,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 0,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "A Brazilian news and media site",
@@ -530,7 +547,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 0,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     },
     {
       "label": "An Australian broadcaster",
@@ -546,7 +564,8 @@
       "cookieless": 0,
       "trackers": [],
       "credits": 0,
-      "fromOwnCountry": true
+      "fromOwnCountry": true,
+      "review": null
     }
   ]
 }

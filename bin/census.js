@@ -42,6 +42,7 @@ function publish(done) {
     trackers: r.trackers,
     credits: r.credits,
     fromOwnCountry: r.from && r.from !== "local",
+    review: r.review || null,
   }));
   const judged = rows.filter((r) => r.verdict === "violation" || r.verdict === "pass");
   const summary = {
@@ -67,6 +68,30 @@ async function main() {
   const sites = load(SITES, []);
   const done = load(PRIVATE, {});
   if (arg("summary")) { console.log(publish(done)); return; }
+  if (arg("rejudge")) {
+    // Re-judge every site from its saved Kane evidence (no Kane runs, no credits).
+    const ev = require("../src/evidence");
+    const consent = require("../src/packs/consent");
+    let changed = 0;
+    for (const [url, d] of Object.entries(done)) {
+      if (!d.audit) continue;
+      const dir = path.join(audit.DATA, "audits", d.audit);
+      let pack, last;
+      try { pack = fs.readdirSync(path.join(dir, "evidence")).find((f) => f.endsWith(".evidence")); last = JSON.parse(fs.readFileSync(path.join(dir, "consent.last-run.json"), "utf8")); } catch { continue; }
+      if (!pack) continue;
+      const net = ev.networkFromPack(path.join(dir, "evidence", pack));
+      const r = consent.judge({ end: last.end, events: last.events, network: net });
+      const counted = (phase) => r.trackerRequests.filter((x) => x.phase === phase && !x.notCounted).reduce((a, x) => a + x.count, 0);
+      const next = { ...d, verdict: r.verdict, why: r.why, bannerShown: r.bannerShown, afterReject: counted("after"), beforeChoice: counted("before"),
+        visitorIds: (r.idsAfterReject || []).length, cookieless: r.cookielessPings || 0,
+        trackers: [...new Set(r.trackerRequests.filter((x) => !x.notCounted).map((x) => x.tracker))] };
+      if (next.verdict !== d.verdict) { changed++; console.log(`${d.country} ${d.category}: ${d.verdict} -> ${next.verdict}  (${r.why})`); }
+      done[url] = next;
+    }
+    fs.writeFileSync(PRIVATE, JSON.stringify(done, null, 2));
+    console.log(`\n${changed} verdict(s) changed.`, publish(done));
+    return;
+  }
   if (arg("probe")) {
     // One cheap check that cloud browsers work before spending credits on the whole list.
     if (!CLOUD) { console.log("Set LT_USERNAME and LT_ACCESS_KEY first."); return; }
@@ -91,8 +116,8 @@ async function main() {
     const t0 = Date.now();
     const job = await audit.runDirect({ url, label: url.replace(/\/$/, ""), pack: "consent", country: CLOUD ? ISO[s.country] : undefined });
     const r = job.result;
-    const after = r ? r.trackerRequests.filter((x) => x.phase === "after" && !x.consentDenied).reduce((a, x) => a + x.count, 0) : 0;
-    const before = r ? r.trackerRequests.filter((x) => x.phase === "before" && !x.consentDenied).reduce((a, x) => a + x.count, 0) : 0;
+    const after = r ? r.trackerRequests.filter((x) => x.phase === "after" && !x.notCounted).reduce((a, x) => a + x.count, 0) : 0;
+    const before = r ? r.trackerRequests.filter((x) => x.phase === "before" && !x.notCounted).reduce((a, x) => a + x.count, 0) : 0;
     const credits = (job.events.find((e) => e.type === "verdict") || {}).credits || 0;
     const endText = String((job.kaneEnd && job.kaneEnd.summary) || (r && r.why) || job.error || "");
     const blocked = (!r || r.verdict !== "violation") && /\b403\b|\b502\b|blocked|access denied|captcha|bot protection|verify you are human/i.test(endText);
@@ -102,7 +127,7 @@ async function main() {
       visitorIds: r ? (r.idsAfterReject || []).length : 0,
       repeatedIds: r ? (r.why || "").includes("more than once") : false,
       cookieless: r ? r.cookielessPings || 0 : 0,
-      trackers: r ? [...new Set(r.trackerRequests.filter((x) => !x.consentDenied).map((x) => x.tracker))] : [],
+      trackers: r ? [...new Set(r.trackerRequests.filter((x) => !x.notCounted).map((x) => x.tracker))] : [],
       credits: Number(credits) || 0,
     };
     fs.writeFileSync(PRIVATE, JSON.stringify(done, null, 2));

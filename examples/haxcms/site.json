@@ -1,0 +1,57 @@
+{
+  "id": "hax-consent-test",
+  "title": "HAX consent test",
+  "author": "",
+  "description": "A HAXCMS site with Google Analytics configured",
+  "license": "by-sa",
+  "metadata": {
+    "author": {},
+    "site": {
+      "name": "hax-consent-test",
+      "created": 1794828584,
+      "updated": 1794828584,
+      "settings": {
+        "gaID": "G-STATUTE01"
+      }
+    },
+    "theme": {
+      "element": "clean-one",
+      "path": "@haxtheweb/clean-one/clean-one.js",
+      "name": "Clean one",
+      "variables": {}
+    },
+    "node": {
+      "fields": {}
+    }
+  },
+  "items": [
+    {
+      "id": "item-home",
+      "indent": 0,
+      "location": "pages/home/index.html",
+      "slug": "home",
+      "order": 0,
+      "parent": null,
+      "title": "Home",
+      "description": "",
+      "metadata": {
+        "created": 1794828584,
+        "updated": 1794828584
+      }
+    },
+    {
+      "id": "item-about",
+      "indent": 0,
+      "location": "pages/about/index.html",
+      "slug": "about",
+      "order": 1,
+      "parent": null,
+      "title": "About",
+      "description": "",
+      "metadata": {
+        "created": 1794828584,
+        "updated": 1794828584
+      }
+    }
+  ]
+}

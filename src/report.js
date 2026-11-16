@@ -25,7 +25,7 @@ function write(outDir, pack, result, meta) {
     lines.push("## Tracker requests Kane recorded", "", "| When | Tracker | Endpoint | Times | Pages | Visitor ID sent |", "|---|---|---|---|---|---|");
     const order = { after: 0, before: 1, unknown: 2 };
     for (const r of [...reqs].sort((a, b) => order[a.phase] - order[b.phase])) {
-      lines.push(`| ${PHASE[r.phase]} | ${r.tracker}${r.consentDenied ? " (consent denied, not counted)" : ""} | ${r.method || ""} ${r.url} | ${r.count} | ${r.pages.join(", ")} | ${r.ids.join("; ")} |`);
+      lines.push(`| ${PHASE[r.phase]} | ${r.tracker}${r.consentDenied ? " (consent denied, not counted)" : r.loaderOnly ? " (tag manager code only, not counted)" : ""} | ${r.method || ""} ${r.url} | ${r.count} | ${r.pages.join(", ")} | ${r.ids.join("; ")} |`);
     }
     lines.push("");
   }

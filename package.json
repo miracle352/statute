@@ -12,7 +12,9 @@
     "demo:fix": "node bin/statute.js fix consent --url http://localhost:4173 --start \"node demo-store/server.js\" --app demo-store",
     "demo:fix-cancel": "node bin/statute.js fix cancel --url http://localhost:4173 --start \"node demo-store/server.js\" --app demo-store",
     "demo:reset": "node bin/statute.js reset-demo",
-    "census": "node bin/census.js"
+    "census": "node bin/census.js",
+    "demo:hax": "node bin/statute.js fix consent --url http://localhost:8095/ --start \"node bin/serve.js 8095 examples/haxcms\" --app examples/haxcms",
+    "demo:hax-reset": "node -e \"for (const f of ['index.html','ghpages.html']) require('fs').copyFileSync('examples/haxcms/.original/'+f,'examples/haxcms/'+f)\""
   },
   "engines": {
     "node": ">=22"

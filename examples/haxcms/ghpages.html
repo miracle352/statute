@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <script>
+    // attempt to correctly set the base without knowing where we're installed fully...
+    if (document.location.pathname.indexOf('/_sites/') != -1) {
+      document.write("<base href='" + document.location.pathname.substring(0, document.location.pathname.indexOf('/', document.location.pathname.indexOf('/_sites/') + 8)) + "/' />");
+    }
+    else if (document.location.pathname.indexOf('/sites/') != -1) {
+      document.write("<base href='" + document.location.pathname.substring(0, document.location.pathname.indexOf('/', document.location.pathname.indexOf('/sites/') + 7)) + "/' />");
+    }
+    // haxtheweb/issues#3202: a Pages site can sit at any depth (org.github.io/,
+    // org.github.io/repo/ or org.github.io/repo/folder/). Pages only serves this
+    // file for a real folder, and deep links come back through 404.html as
+    // <folder>/?p=/route, so the URL's own folder is the site's folder.
+    // GitLab Pages (user.gitlab.io/project/) and Codeberg Pages
+    // (user.codeberg.page/repo/) serve project sites the same way
+    // (haxtheweb/issues#3341).
+    else if (/(^|\.)(github\.io|gitlab\.io|codeberg\.page)$/.test(globalThis.location.hostname)) {
+      document.write("<base href='" + document.location.pathname.substring(0, document.location.pathname.lastIndexOf('/') + 1) + "' />");
+    }
+    else {
+      document.write("<base href='/' />");
+    }
+    var mangedSEO = document.querySelectorAll('[data-managed-seo]');
+    for (var i = 0; i < mangedSEO.length; i++) {
+      var seoTag = mangedSEO[i];
+      seoTag.setAttribute('content', document.location.href);
+    }
+  </script>
+  <script>
+    (function() {
+      var cdn = "./";
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('HEAD', './build/es6/node_modules/@haxtheweb/wc-autoload/wc-autoload.js', false);
+        xhr.send();
+        if (xhr.status >= 400) {
+          cdn = "https://cdn.hax.cloud/cdn/";
+        }
+      } catch (e) {}
+      globalThis.__appCDN = cdn;
+      if (cdn !== "./") {
+        var cdns = [
+          'https://cdn.hax.cloud/cdn/',
+          'https://cdn.webcomponents.psu.edu/cdn/'
+        ];
+        var preloads = document.querySelectorAll('link[rel="modulepreload"]');
+        for (var i = 0; i < preloads.length; i++) {
+          var href = preloads[i].getAttribute('href');
+          if (href && href.indexOf('./build/') === 0) {
+            preloads[i].setAttribute('href', cdn + href.substring(2));
+          }
+        }
+        var baseCss = document.querySelector('link[rel="preload"][as="style"]');
+        if (baseCss && baseCss.getAttribute('href') && baseCss.getAttribute('href').indexOf('./build/') === 0) {
+          baseCss.setAttribute('href', cdn + baseCss.getAttribute('href').substring(2));
+        }
+        var importmap = document.querySelector('script[type="importmap"]');
+        if (importmap) {
+          try {
+            var map = JSON.parse(importmap.textContent);
+            if (map.scopes) {
+              Object.keys(map.scopes).forEach(function(scope) {
+                Object.keys(map.scopes[scope]).forEach(function(key) {
+                  var val = map.scopes[scope][key];
+                  cdns.forEach(function(oldCdn) {
+                    if (val.indexOf(oldCdn) === 0) {
+                      map.scopes[scope][key] = cdn + val.substring(oldCdn.length);
+                    }
+                  });
+                });
+              });
+            }
+            importmap.textContent = JSON.stringify(map);
+          } catch (e) {}
+        }
+      }
+    })();
+  </script>
+  <script type="importmap">
+    {
+      "scopes": {
+        "./custom/build/": {
+          "@haxtheweb/": "https://cdn.hax.cloud/cdn/build/es6/node_modules/@haxtheweb/"
+        }
+      }
+    }
+  </script>
+  <link rel="llms" href="llms.txt" title="LLM Content Map">
+  <link rel="alternate" type="text/markdown" href="llms.txt" title="Markdown Summary">
+  <link rel="https://agentskills.io/rels/skills-index" type="application/json" href=".well-known/agent-skills/index.json" title="Agent Skills Discovery Index">
+  <link rel="preconnect" crossorigin href="https://fonts.googleapis.com">
+  <link rel="preconnect" crossorigin href="https://cdnjs.cloudflare.com">
+  <title>HAXcms</title>
+  <meta name="application-name" content="HAXcms" />
+  <meta name="apple-mobile-web-app-title" content="HAXcms" />
+  <meta name="og:site_name" property="og:site_name" content="HAXcms" />
+  <meta name="og:title" property="og:title" content="HAXcms" />
+  <meta name="twitter:title" property="twitter:title" content="HAXcms" />
+  <meta name="og:url" property="og:url" content="/" data-managed-seo />
+  <meta name="twitter:site" property="twitter:site" content="/" data-managed-seo />
+  <!-- build.js and build-haxcms.js are loaded via script at the end of body; removing redundant preload -->
+  <link rel="preload" href="./wc-registry.json" as="fetch" crossorigin="anonymous" fetchpriority="high" />
+  <!-- Static fallback shell modulepreload set (see the matching comment in
+       boilerplate/site/index.html). The dynamic publish/render path replaces
+       this with a graph-driven, capped set from wc-registry-graph.json via
+       HAXCMS.buildShellModulepreloadPaths; the ./build/ prefix shape is
+       preserved so the CDN-fallback rewriter below keeps working. -->
+  <link rel="modulepreload" href="./build/es6/node_modules/@haxtheweb/wc-autoload/wc-autoload.js" crossorigin="anonymous" />
+  <link rel="modulepreload" href="./build/es6/node_modules/@haxtheweb/dynamic-import-registry/dynamic-import-registry.js" crossorigin="anonymous" />
+  <link rel="modulepreload" href="./build/es6/node_modules/@haxtheweb/haxcms-elements/lib/core/haxcms-site-builder.js" crossorigin="anonymous" />
+  <link rel="modulepreload" href="./build/es6/node_modules/@haxtheweb/haxcms-elements/lib/core/haxcms-site-store.js" crossorigin="anonymous" />
+  <link rel="modulepreload" href="./build/es6/node_modules/@haxtheweb/haxcms-elements/lib/core/haxcms-site-router.js" crossorigin="anonymous" />
+  <link rel="modulepreload" href="./build/es6/node_modules/@haxtheweb/haxcms-elements/lib/core/HAXCMSThemeWiring.js" crossorigin="anonymous" />
+  <link rel="modulepreload" href="./build/es6/node_modules/@haxtheweb/haxcms-elements/lib/core/HAXCMSLitElementTheme.js" crossorigin="anonymous" />
+  <link rel="modulepreload" href="./build/es6/node_modules/@haxtheweb/utils/utils.js" crossorigin="anonymous" />
+  <link rel="preload" href="./build/es6/node_modules/@haxtheweb/haxcms-elements/lib/base.css" as="style" />
+  <meta name="generator" content="HAXcms">
+  <link rel="manifest" href="manifest.json">
+  <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+  <link rel="icon" href="assets/icon-48x48.png">
+  <meta name="theme-color" content="">
+  <meta name="robots" content="index, follow">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" sizes="48x48" href="assets/icon-48x48.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="assets/icon-72x72.png">
+  <link rel="apple-touch-icon" sizes="96x96" href="assets/icon-96x96.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="assets/icon-144x144.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/icon-192x192.png">
+  <meta name="msapplication-TileImage" content="assets/icon-144x144.png">
+  <meta name="msapplication-TileColor" content="">
+  <meta name="msapplication-tap-highlight" content="no">
+  <meta name="description" content="" />
+  <meta name="og:type" property="og:type" content="article" />
+  <meta name="og:description" property="og:description" content="" />
+  <meta name="twitter:card" property="twitter:card" content="summary_large_image" />
+  <meta name="twitter:description" property="twitter:description" content="" />
+  <meta name="twitter:image" property="twitter:image" content="" />
+  <link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/" title="Creative Commons: Attribution Share a like" />
+  
+  <!-- Service worker disabled via settings -->
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 98vh;
+    }
+    haxcms-site-builder {
+      display: flow-root; /* children's margins stay inside, so swapping content can't move it */
+      min-height: 100svh;
+    }
+    /* Images in the content the server rendered into the page fit the screen
+       and keep their shape from width/height, so they don't push the text
+       below them down when they finish loading. */
+    haxcms-site-builder:not(:defined) img {
+      max-width: 100%;
+      height: auto;
+    }
+    .haxcms-theme-element:not(:defined) {
+      display: block;
+      min-height: 100svh;
+      padding: 48px 32px;
+      font-size: 20px;
+      background-color: light-dark(#dadada, #222222);
+      color: light-dark(#222222, #dadada);
+    }
+
+  </style>
+  <style id="loadingstyles">
+    haxcms-site-builder {
+      display: flow-root;
+    }
+    /* The loading screen: a page that builds itself (blocks drop onto a sheet,
+       a caret blinks once), looping until the site is ready, then finishing
+       and dissolving into the site. Plain CSS + the loadingscript below; no
+       images, fonts or other requests. Colors follow the system light/dark
+       setting. */
+    #loading {
+      color-scheme: light dark;
+      --ld-accent: #3ea39e; /* creekTeal */
+      --ld-bg: light-dark(#f2f2f4, #000321); /* limestoneMaxLight, potentialMidnight */
+      --ld-ink: light-dark(#314d64, #ccdae6); /* slateGray, slateLight */
+      --ld-strong: light-dark(#001e44, #ffffff); /* nittanyNavy, white */
+      --ld-sheet: light-dark(#ffffff, #001e44); /* white, nittanyNavy */
+      --ld-line: light-dark(#a2aaad, #314d64); /* limestoneGray, slateGray */
+      --ld-faint: light-dark(#e4e5e7, #1e407c); /* limestoneLight, beaverBlue */
+      --ld-bar: light-dark(#ccdae6, #314d64); /* slateLight, slateGray */
+      --ld-head: light-dark(#a2aaad, #96bee6); /* limestoneGray, pughBlue */
+      --ld-size: 320px;
+      background-color: var(--ld-bg);
+      color: var(--ld-ink);
+      inset: 0;
+      opacity: 1;
+      position: fixed;
+      z-index: 99999999;
+    }
+    #loading div.messaging {
+      align-items: center;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      left: 0px;
+      position: absolute;
+      right: 0px;
+      text-align: center;
+      top: 50%;
+      transform: translateY(-54%);
+    }
+    #loading div.messaging .ld-label {
+      color: var(--ld-ink);
+      font-family: "Roboto", system-ui, -apple-system, "Segoe UI", Helvetica, sans-serif !important;
+      font-size: 14px !important;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      line-height: 1.5;
+      margin: 0;
+      padding: 0;
+    }
+    /* the figure: positions and sizes are in a 300 x 210 grid (--x --y --w --h),
+       scaled by --u so it fits narrow screens; only opacity and transform move */
+    #loading .ld-fig {
+      --u: calc(min(var(--ld-size), 68vw) / 300);
+      flex: none;
+      height: calc(210 * var(--u));
+      position: relative;
+      width: calc(300 * var(--u));
+    }
+    :where(#loading .ld-fig) > span {
+      border-radius: calc(3 * var(--u));
+      box-sizing: border-box;
+      display: block;
+      height: calc(var(--h) * var(--u));
+      left: calc(var(--x) * var(--u));
+      position: absolute;
+      top: calc(var(--y) * var(--u));
+      width: calc(var(--w) * var(--u));
+    }
+    #loading .ld-back {
+      border: 1px solid var(--ld-faint);
+    }
+    #loading .ld-page {
+      background: var(--ld-sheet);
+      border: 1px solid var(--ld-line);
+      border-radius: calc(8 * var(--u)); /* ddd-radius-sm */
+      box-shadow: 0 calc(8 * var(--u)) calc(16 * var(--u)) light-dark(rgba(0, 3, 33, 0.15), rgba(150, 190, 230, 0.1)); /* ddd-boxShadow-md */
+    }
+    #loading .ld-l {
+      animation: 3600ms linear infinite;
+      background: var(--ld-bar);
+      will-change: transform, opacity;
+    }
+    #loading .ld-h {
+      background: var(--ld-head);
+    }
+    #loading .ld-img,
+    #loading .ld-thumb {
+      background: var(--ld-faint);
+      border: 1px solid var(--ld-line);
+      overflow: hidden;
+    }
+    #loading .ld-img::before {
+      background: var(--ld-accent);
+      border-radius: 50%;
+      content: '';
+      height: calc(14 * var(--u));
+      position: absolute;
+      right: calc(16 * var(--u));
+      top: calc(9 * var(--u));
+      width: calc(14 * var(--u));
+    }
+    #loading .ld-img::after,
+    #loading .ld-thumb::after {
+      background: var(--ld-line);
+      clip-path: polygon(0 100%, 0 80%, 24% 44%, 44% 70%, 64% 40%, 100% 78%, 100% 100%);
+      content: '';
+      inset: 0;
+      position: absolute;
+    }
+    #loading .ld-caret {
+      animation: ldc 3600ms step-end infinite;
+      background: var(--ld-strong);
+      border-radius: 1px;
+    }
+    #loading .ld1 { animation-name: ld1; }
+    #loading .ld2 { animation-name: ld2; }
+    #loading .ld3 { animation-name: ld3; }
+    #loading .ld4 { animation-name: ld4; }
+    #loading .ld5 { animation-name: ld5; }
+    #loading .ld6 { animation-name: ld6; }
+    #loading .ld7 { animation-name: ld7; }
+    #loading .ld8 { animation-name: ld8; }
+    #loading .ld9 { animation-name: ld9; }
+    /* one 3600ms loop: each block drops in (staggered), the caret blinks once
+       and stays (built at 2850ms), everything rests, fades, and starts again.
+       Keep LOOP_MS / BUILT_MS in the loadingscript in step with this. */
+    @keyframes ld1 { 0%, 2.8% { opacity: 0; transform: translateY(calc(-16 * var(--u))); animation-timing-function: cubic-bezier(0.2, 0, 0, 1); } 13.3%, 91.7% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+    @keyframes ld2 { 0%, 15.6% { opacity: 0; transform: translateY(calc(-16 * var(--u))); animation-timing-function: cubic-bezier(0.2, 0, 0, 1); } 26.1%, 91.7% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+    @keyframes ld3 { 0%, 19.4% { opacity: 0; transform: translateY(calc(-16 * var(--u))); animation-timing-function: cubic-bezier(0.2, 0, 0, 1); } 29.9%, 91.7% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+    @keyframes ld4 { 0%, 23.3% { opacity: 0; transform: translateY(calc(-16 * var(--u))); animation-timing-function: cubic-bezier(0.2, 0, 0, 1); } 33.8%, 91.7% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+    @keyframes ld5 { 0%, 33.3% { opacity: 0; transform: translateY(calc(-16 * var(--u))); animation-timing-function: cubic-bezier(0.2, 0, 0, 1); } 43.8%, 91.7% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+    @keyframes ld6 { 0%, 45% { opacity: 0; transform: translateY(calc(-16 * var(--u))); animation-timing-function: cubic-bezier(0.2, 0, 0, 1); } 55.5%, 91.7% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+    @keyframes ld7 { 0%, 48.3% { opacity: 0; transform: translateY(calc(-16 * var(--u))); animation-timing-function: cubic-bezier(0.2, 0, 0, 1); } 58.8%, 91.7% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+    @keyframes ld8 { 0%, 51.7% { opacity: 0; transform: translateY(calc(-16 * var(--u))); animation-timing-function: cubic-bezier(0.2, 0, 0, 1); } 62.2%, 91.7% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+    @keyframes ld9 { 0%, 55% { opacity: 0; transform: translateY(calc(-16 * var(--u))); animation-timing-function: cubic-bezier(0.2, 0, 0, 1); } 65.5%, 91.7% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+    @keyframes ldc { 0% { opacity: 0; } 68% { opacity: 1; } 73.6% { opacity: 0; } 79.2% { opacity: 1; } 91.7% { opacity: 1; animation-timing-function: linear; } 100% { opacity: 0; } }
+    /* ready: the figure finishes (loadingscript), then the screen dissolves */
+    #loading.loaded {
+      animation: fade-out .1s ease-in-out;
+      animation-fill-mode: forwards;
+    }
+    #loading.ld-out {
+      animation: none;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 300ms cubic-bezier(0.4, 0, 1, 1) 50ms; /* duration-normal, timing-exit */
+    }
+    #loading.ld-out div.messaging {
+      opacity: 0;
+      transform: translateY(-54%) scale(0.985);
+      transition: opacity 150ms cubic-bezier(0.4, 0, 1, 1), transform 300ms cubic-bezier(0.4, 0, 0.2, 1); /* duration-fast/normal, timing-exit/ease */
+    }
+    #loading.ld-out.ld-quick {
+      transition: opacity 150ms linear;
+    }
+    #loading.ld-out.ld-quick div.messaging {
+      transform: translateY(-54%);
+      transition: opacity 150ms linear;
+    }
+    @keyframes fade-out {
+      0% {
+        opacity: 1;
+      }
+      99% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 0;
+      }
+    }
+    /* reduced motion: a still, built page and a quick fade */
+    @media (prefers-reduced-motion: reduce) {
+      #loading .ld-l,
+      #loading .ld-caret {
+        animation: none;
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
+  <script id="loadingscript">
+    globalThis.dataLayer = globalThis.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    (function () {
+      var loadingDismissed = false;
+      var analyticsLoaded = false;
+      var CONSENT_KEY = 'haxcms-analytics-consent';
+      function getConsent() {
+        try { return globalThis.localStorage.getItem(CONSENT_KEY); } catch (e) { return null; }
+      }
+      function setConsent(value) {
+        try { globalThis.localStorage.setItem(CONSENT_KEY, value); } catch (e) {}
+      }
+      function showConsentBanner() {
+        if (document.getElementById('haxcms-consent')) {
+          return;
+        }
+        var banner = document.createElement('div');
+        banner.id = 'haxcms-consent';
+        banner.setAttribute('role', 'dialog');
+        banner.setAttribute('aria-label', 'Cookie consent');
+        banner.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;' +
+          'padding:16px;background:#222;color:#fff;font:16px sans-serif;display:flex;' +
+          'gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;';
+        var text = document.createElement('span');
+        text.textContent = 'This site uses analytics cookies. Do you accept them?';
+        var accept = document.createElement('button');
+        accept.type = 'button';
+        accept.textContent = 'Accept';
+        var decline = document.createElement('button');
+        decline.type = 'button';
+        decline.textContent = 'Decline';
+        accept.addEventListener('click', function () {
+          setConsent('granted');
+          banner.remove();
+          loadAnalyticsFromManifest();
+        });
+        decline.addEventListener('click', function () {
+          setConsent('denied');
+          banner.remove();
+        });
+        banner.appendChild(text);
+        banner.appendChild(accept);
+        banner.appendChild(decline);
+        document.body.appendChild(banner);
+      }
+      function loadAnalyticsFromManifest() {
+        if (analyticsLoaded) {
+          return;
+        }
+        var consent = getConsent();
+        if (consent === 'denied') {
+          return;
+        }
+        if (consent !== 'granted') {
+          showConsentBanner();
+          return;
+        }
+        analyticsLoaded = true;
+        var script = document.createElement('script');
+        script.async = true;
+        document.body.appendChild(script);
+        if (
+          globalThis.HAXCMS &&
+          globalThis.HAXCMS.requestAvailability &&
+          globalThis.HAXCMS.requestAvailability().store.getManifest()
+        ) {
+          var gaid =
+            globalThis.HAXCMS.requestAvailability().store.getManifest()
+              .metadata.site.settings.gaID || null;
+          if (gaid) {
+            gtag('config', gaid);
+            script.src =
+              'https://www.googletagmanager.com/gtag/js?id=' + gaid;
+          }
+        }
+      }
+      // The loading figure is a page that builds itself, on a loop of CSS
+      // animations (the ld* keyframes in #loadingstyles) while the site loads.
+      function dissolveLoading(loadingEl, quick) {
+        // .loaded is still how HAX says "ready" to themes; .ld-out is the fade
+        loadingEl.classList.add('loaded', 'ld-out');
+        if (quick) {
+          loadingEl.classList.add('ld-quick');
+        }
+        loadingEl.setAttribute('aria-busy', 'false');
+        setTimeout(function () {
+          loadingEl.setAttribute('hidden', 'hidden');
+        }, quick ? 200 : 350);
+      }
+      function revealSite(loadingEl) {
+        // The site is ready, so get out of the way at once. Waiting for the
+        // build animation to finish first kept rendered content hidden for up
+        // to ~900ms more on slow devices.
+        dissolveLoading(loadingEl, true);
+      }
+      function hideLoading() {
+        if (loadingDismissed) {
+          return;
+        }
+        loadingDismissed = true;
+        var loadingEl = document.querySelector('#loading');
+        if (!loadingEl) {
+          return;
+        }
+        globalThis.requestAnimationFrame(function () {
+          globalThis.requestAnimationFrame(function () {
+            revealSite(loadingEl);
+          });
+        });
+      }
+      globalThis.addEventListener(
+        'json-outline-schema-active-body-changed',
+        function () {
+          hideLoading();
+        },
+        { once: true }
+      );
+      globalThis.addEventListener(
+        'haxcms-ready',
+        function () {
+          setTimeout(function () {
+            loadAnalyticsFromManifest();
+          }, 150);
+          setTimeout(function () {
+            hideLoading();
+          }, 2500);
+        },
+        { once: true }
+      );
+    })();
+  </script>
+</head>
+<body vocab="http://schema.org/" prefix="oer:http://oerschema.org cc:http://creativecommons.org/ns dc:http://purl.org/dc/terms/">
+  <section role="status" id="loading" aria-busy="true">
+    <div class="messaging">
+      <div class="ld-fig" aria-hidden="true">
+        <span class="ld-back" style="--x:78;--y:0;--w:168;--h:192"></span>
+        <span class="ld-page" style="--x:66;--y:6;--w:168;--h:198"></span>
+        <span class="ld-l ld-h ld1" style="--x:80;--y:22;--w:140;--h:16"></span>
+        <span class="ld-l ld2" style="--x:80;--y:50;--w:132;--h:5"></span>
+        <span class="ld-l ld3" style="--x:80;--y:61;--w:140;--h:5"></span>
+        <span class="ld-l ld4" style="--x:80;--y:72;--w:96;--h:5"></span>
+        <span class="ld-l ld-img ld5" style="--x:80;--y:90;--w:140;--h:56"></span>
+        <span class="ld-l ld-thumb ld6" style="--x:80;--y:158;--w:42;--h:34"></span>
+        <span class="ld-l ld7" style="--x:132;--y:160;--w:88;--h:5"></span>
+        <span class="ld-l ld8" style="--x:132;--y:171;--w:88;--h:5"></span>
+        <span class="ld-l ld9" style="--x:132;--y:182;--w:60;--h:5"></span>
+        <span class="ld-caret" style="--x:196;--y:179;--w:2;--h:11"></span>
+      </div>
+      <p class="ld-label">Loading...</p>
+    </div>
+  </section>
+  <haxcms-site-builder id="site" file="site.json?2GQKWcJ3ni0xrL2X4_Dw_Sr9SeXqY2Sk3XblmvHVArA"></haxcms-site-builder>
+  <script data-haxcms-site-json-preload>
+    // haxcms-site-builder fetches this file first; start the download now so
+    // it is not queued behind the JavaScript that boots the builder
+    (function () {
+      var builder = document.getElementById('site');
+      var file = builder ? builder.getAttribute('file') : '';
+      // a JSON blob instead of a path needs no download
+      if (file && file.charAt(0) !== '{' && document.head) {
+        var link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'fetch';
+        link.href = file;
+        link.crossOrigin = 'anonymous';
+        link.setAttribute('fetchpriority', 'high');
+        document.head.appendChild(link);
+      }
+    })();
+  </script>
+  <script>
+    // reduce FOUC for dark mode so it starts in dark rapidly if selected
+    (function () {
+      try {
+        var ls = globalThis.localStorage;
+        var stored = ls ? ls.getItem('app-hax-darkMode') : null;
+        var dark = stored !== null
+          ? stored === 'true'
+          : !!(globalThis.matchMedia && globalThis.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) {
+          document.body.classList.add('dark-mode');
+        } else {
+          document.body.classList.remove('dark-mode');
+        }
+      } catch (e) {}
+    })();
+    globalThis.MicroFrontendRegistryConfig = globalThis.MicroFrontendRegistryConfig || {};
+    globalThis.HAXCMSContext="published";globalThis.__appCDN=globalThis.__appCDN || "./";</script>
+  <script src="./build-haxcms.js"></script>
+  <script src="./build.js"></script>
+</body>
+</html>

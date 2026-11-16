@@ -1,0 +1,32 @@
+{
+  "linkset": [
+    {
+      "anchor": "{{ domain }}",
+      "item": [
+        {
+          "href": "{{ domain }}x/api",
+          "rel": "service"
+        }
+      ],
+      "service-desc": [
+        {
+          "href": "{{ domain }}x/api/openapi.json?profile=public",
+          "type": "application/json",
+          "title": "Public profile: operations that work without logging in"
+        },
+        {
+          "href": "{{ domain }}x/api/openapi",
+          "type": "application/json"
+        },
+        {
+          "href": "{{ domain }}x/api/openapi.json",
+          "type": "application/json"
+        },
+        {
+          "href": "{{ domain }}x/api/openapi.yaml",
+          "type": "application/yaml"
+        }
+      ]
+    }
+  ]
+}

@@ -335,7 +335,8 @@
         : `<span><b>${r.afterReject}</b> tracker request${r.afterReject === 1 ? "" : "s"} after Reject</span>
            <span><b>${r.beforeChoice}</b> before any choice</span>
            ${r.visitorIds ? `<span><b>${r.visitorIds}</b> visitor ID${r.visitorIds === 1 ? "" : "s"} sent after Reject</span>` : ""}
-           ${r.trackers && r.trackers.length ? `<span>${esc(r.trackers.slice(0, 3).join(", "))}</span>` : ""}`;
+           ${r.trackers && r.trackers.length ? `<span>${esc(r.trackers.slice(0, 3).join(", "))}</span>` : ""}
+           ${r.review ? `<span class="review">Checked by hand: ${esc(r.review)}</span>` : ""}`;
       return `<article class="site ${cls} reveal" style="transition-delay:${(i % 4) * 80}ms"><div class="site-top"><h3>${esc(r.label)}</h3><span class="badge">${word[r.verdict] || "Not judged"}</span></div><div class="facts">${facts}</div></article>`;
     }).join("");
     $$(".reveal", wall).forEach((el) => revealer.observe(el));

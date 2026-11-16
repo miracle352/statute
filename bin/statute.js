@@ -70,7 +70,7 @@ async function check(pack, { url, out, start, cwd, show }) {
 function judgeAndReport(pack, { end, events, packPath, out }) {
   if (!packPath) throw new Error("No evidence pack found.");
   const network = evidence.networkFromPack(packPath);
-  const result = pack.judge({ end, events, network });
+  const result = pack.judge({ end, events, network, strict: true });
   const file = report.write(out, pack, result, {
     evidence: packPath,
     testUrl: (end && end.test_url) || network.shareLink,

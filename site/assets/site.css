@@ -214,6 +214,7 @@ code { font-family: var(--mono); font-size: .9em; }
 .site.pass .badge { color: var(--mint); background: rgba(95, 227, 167, .12); }
 .site.unjudged .badge { color: var(--soft); background: rgba(255, 255, 255, .07); }
 .site .facts { margin-top: auto; display: grid; gap: 3px; font-size: 13.5px; color: var(--soft); }
+.site .facts .review { margin-top: 6px; color: var(--faint); font-size: 12.5px; }
 .site .facts b { color: #fff; font-weight: 500; font-variant-numeric: tabular-nums; }
 .wall-empty { grid-column: 1 / -1; border: 1px dashed var(--line); border-radius: 18px; padding: 36px; color: var(--soft); text-align: center; }
 

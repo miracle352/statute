@@ -14,10 +14,17 @@ const laws = [
   { ref: "California Civil Code §1798.120 (CCPA/CPRA)", gist: "consumers may opt out of the sale or sharing of their personal information" },
 ];
 
+const isShop = (url) => /:4173\/|\/demo\/?$/.test(url);
+
 function objective(url) {
-  return (
+  if (isShop(url)) return (
     `Go to ${url}. In the cookie banner, click the button that rejects all cookies. ` +
     `Open the first product. Click the add to cart button. Reload the page.`
+  );
+  return (
+    `Go to ${url}. Before doing anything else, deal with the cookie or analytics consent banner if one is shown: ` +
+    `click the button that rejects or declines it. If no banner is shown, do not look for one. ` +
+    `Then open one page from the site's navigation, then reload that page.`
   );
 }
 
@@ -115,7 +122,10 @@ function bannerSeen(actions) {
   return null;
 }
 
-function judge({ events, network }) {
+// strict: used for your own app. A site that loads trackers and gives no way to
+// refuse them breaks the rule outright; for third-party sites the banner may simply
+// not be shown to Kane's location, so those runs stay unjudged.
+function judge({ events, network, strict = false }) {
   const reject = findReject(network.actions, events, network.liveRejectAt);
   const banner = bannerSeen(network.actions);
   const hits = [];
@@ -128,13 +138,16 @@ function judge({ events, network }) {
     const phase = reject && reject.time && t ? (t >= reject.time ? "after" : "before") : "unknown";
     const page = u.searchParams.get("dl") || u.searchParams.get("dp") || null;
     const denied = consentModeDenied(u);
-    hits.push({ tracker, url: u.origin + u.pathname, method: r.method, status: r.status, time: r.time, phase, page, id: denied ? null : visitorId(u), denied });
+    // Google Tag Manager's own code (the container or gtag library) carries no
+    // measurement on its own; the hits it sends later do. Shown, not counted.
+    const loader = /(^|\.)googletagmanager\.com$/.test(u.hostname) && /^\/(gtm\.js|gtag\/js|gtag\/destination)$/.test(u.pathname);
+    hits.push({ tracker, url: u.origin + u.pathname, method: r.method, status: r.status, time: r.time, phase, page, id: denied ? null : visitorId(u), denied, loader });
   }
 
   // Group identical endpoints per phase so the report stays readable.
   const groups = new Map();
   for (const h of hits) {
-    const key = `${h.phase}|${h.url}|${h.denied ? "d" : ""}`;
+    const key = `${h.phase}|${h.url}|${h.denied ? "d" : ""}${h.loader ? "l" : ""}`;
     const g = groups.get(key) || { ...h, count: 0, pages: new Set(), ids: new Set() };
     g.count++;
     if (h.page) g.pages.add(h.page);
@@ -143,13 +156,14 @@ function judge({ events, network }) {
   }
   const trackerRequests = [...groups.values()].map((g) => ({
     phase: g.phase, tracker: g.tracker, url: g.url, method: g.method, status: g.status,
-    count: g.count, firstTime: g.time, pages: [...g.pages], ids: [...g.ids], consentDenied: !!g.denied,
+    count: g.count, firstTime: g.time, pages: [...g.pages], ids: [...g.ids], consentDenied: !!g.denied, loaderOnly: !!g.loader,
+    notCounted: !!(g.denied || g.loader),
   }));
 
   // If the site uses Consent Mode and its pings say "denied", the tag library
   // loading is part of that design; count only hits that are not denied pings.
   const usesDeniedMode = hits.some((h) => h.denied && h.phase !== "before");
-  const counts = (h) => !h.denied && !(usesDeniedMode && /googletagmanager\.com/.test(h.tracker));
+  const counts = (h) => !h.denied && !h.loader && !(usesDeniedMode && /googletagmanager\.com/.test(h.tracker));
   const real = hits.filter(counts);
   const cookieless = hits.filter((h) => h.denied && h.phase !== "before").length;
   const after = real.filter((h) => h.phase === "after");
@@ -170,10 +184,15 @@ function judge({ events, network }) {
   if (!reject && banner === false && network.harFiles !== 0) {
     // Many sites show a banner only to visitors in some countries, so a site
     // that showed none to Kane's location is not judged on this run.
-    verdict = "inconclusive";
-    why = real.length
+    verdict = strict && real.length ? "violation" : "inconclusive";
+    why = strict && real.length
+      ? `The page offered no way to refuse cookies, and ${plural(real.length, "tracker request")} went out before the visitor made any choice.`
+      : real.length
       ? `No cookie banner was shown to Kane's browser from its location, and ${plural(real.length, "tracker request")} went out. Sites often show banners only to visitors in the EU or UK, so this run can't judge the Reject button.`
       : `No cookie banner was shown to Kane's browser from its location, and no tracker loaded.`;
+  } else if (!reject && strict && real.length) {
+    verdict = "violation";
+    why = `Kane found no way to refuse cookies, and ${plural(real.length, "tracker request")} went out before the visitor made any choice.`;
   } else if (!reject) {
     verdict = "inconclusive";
     why = "Kane did not find or click a reject button, so this run cannot prove anything either way.";
@@ -196,6 +215,8 @@ function judge({ events, network }) {
     verdict = "pass";
     why = cookieless
       ? `Kane refused cookies. ${plural(cookieless, "Google hit")} still went out, but each said consent was denied (Google Consent Mode), with no visitor cookie. No other tracker loaded.`
+      : hits.some((h) => h.loader)
+      ? `Kane refused cookies and recorded ${plural(network.requests.length, "request")}. Google Tag Manager's code loaded, but no measurement or ad hit went out and no visitor ID was sent.`
       : `Kane refused cookies and recorded ${plural(network.requests.length, "request")}; none went to a known tracker and no visitor ID was sent.`;
   }
 
@@ -210,6 +231,7 @@ function judge({ events, network }) {
 const fixHint =
   "Load each tracker listed above only after the visitor accepts. Before a choice, and after " +
   "Reject, the tags must not load at all (hiding the banner is not enough). Check the stored " +
-  "choice on every page load, before any tag script is added. Keep the tags working after Accept.";
+  "choice on every page load, before any tag script is added. Keep the tags working after Accept. " +
+  "If the site has no way to refuse yet, add a small banner with Accept and Decline buttons.";
 
 module.exports = { id, title, rule, laws, objective, judge, fixHint, matchDomain, visitorId, cleanLabel, actionText };

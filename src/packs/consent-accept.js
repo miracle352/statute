@@ -7,7 +7,8 @@ const title = "Accept still works";
 const rule = "When a visitor accepts cookies, the site's analytics and ads tags load as intended.";
 
 function objective(url) {
-  return `Go to ${url}. In the cookie banner, click the button that accepts all cookies. Open the first product.`;
+  if (/:4173\/|\/demo\/?$/.test(url)) return `Go to ${url}. In the cookie banner, click the button that accepts all cookies. Open the first product.`;
+  return `Go to ${url}. In the cookie or analytics consent banner, click the button that accepts or allows it. Then open one page from the site's navigation.`;
 }
 
 const ACCEPT_WORDS = /(accept|agree|allow all|allow cookies|got it)/i;

@@ -30,6 +30,22 @@ inputs:
   comment:
     description: "Post the verdict as a comment on the pull request (needs pull-requests: write)."
     default: "true"
+  fix:
+    description: >
+      On a pull request with a violation, hand Statute's report to Claude Code, let it fix the app,
+      and send Kane back. The fix is committed to the pull request only if Kane passes.
+      Needs `start` (the app must run on the runner), `claude-token`, contents: write,
+      and actions/checkout with `ref: ${{ github.head_ref }}`. Pull requests from forks are only checked.
+    default: "false"
+  claude-token:
+    description: Claude Code token for `fix` (run `claude setup-token`). Pass it from a repository secret.
+    default: ""
+  app:
+    description: Folder Claude Code may edit when fixing. Defaults to the whole repository.
+    default: "."
+  rounds:
+    description: Most fix attempts before giving up.
+    default: "3"
   issue:
     description: >
       Outside pull requests (a schedule, a manual run), open an issue when a check fails and close it
@@ -80,6 +96,11 @@ runs:
       shell: bash
       run: npm install -g @testmuai/kane-cli
 
+    - name: Install Claude Code
+      if: steps.plan.outputs.checks != '' && inputs.fix == 'true' && github.event_name == 'pull_request' && inputs.claude-token != '' && inputs.start != ''
+      shell: bash
+      run: npm install -g @anthropic-ai/claude-code && echo "STATUTE_FIX=1" >> "$GITHUB_ENV"
+
     - name: Run the checks
       id: run
       shell: bash
@@ -89,6 +110,9 @@ runs:
         STATUTE_CHECKS: ${{ steps.plan.outputs.checks }}
         STATUTE_URL: ${{ inputs.url }}
         STATUTE_START: ${{ inputs.start }}
+        STATUTE_APP: ${{ inputs.app }}
+        STATUTE_ROUNDS: ${{ inputs.rounds }}
+        CLAUDE_CODE_OAUTH_TOKEN: ${{ inputs.claude-token }}
       run: |
         set +e
         out="$RUNNER_TEMP/statute-report"; mkdir -p "$out"
@@ -108,22 +132,50 @@ runs:
           exit 0
         fi
         worst=pass
+        fixed=""
         for c in $STATUTE_CHECKS; do
-          args=(check "$c" --url "$STATUTE_URL" --out "$out")
-          if [ -n "$STATUTE_START" ]; then args+=(--start "$STATUTE_START"); fi
+          dir="$out"
+          if [ "$STATUTE_FIX" = 1 ]; then
+            dir="$out/$c"; mkdir -p "$dir"
+            args=(fix "$c" --url "$STATUTE_URL" --start "$STATUTE_START" --app "$STATUTE_APP" --rounds "$STATUTE_ROUNDS" --out "$dir")
+          else
+            args=(check "$c" --url "$STATUTE_URL" --out "$out")
+            if [ -n "$STATUTE_START" ]; then args+=(--start "$STATUTE_START"); fi
+          fi
           node "$GITHUB_ACTION_PATH/bin/statute.js" "${args[@]}" 2>&1 | tee -a "$RUNNER_TEMP/statute.log"
           code=${PIPESTATUS[0]}
           case $code in 0) v=pass ;; 1) v=violation ;; *) v=inconclusive ;; esac
+          if [ "$STATUTE_FIX" = 1 ] && grep -q "Claude Code fixed" "$dir/loop.md" 2>/dev/null && [ "$code" = 0 ]; then fixed="$fixed $c"; fi
           if [ "$v" = violation ]; then worst=violation; elif [ "$v" = inconclusive ] && [ "$worst" = pass ]; then worst=inconclusive; fi
           if [ -f "$RUNNER_TEMP/statute-scope.json" ]; then
             why=$(node -e 'const r=require(process.argv[1]).reasons[process.argv[2]]||[];console.log(r.slice(0,3).map(x=>"`"+x.file+"` ("+x.why+")").join(", "))' "$RUNNER_TEMP/statute-scope.json" "$c")
             [ -n "$why" ] && printf '_Ran because this change touches %s._\n\n' "$why" >> "$summary"
           fi
-          if [ -f "$out/$c.md" ]; then sed '1s/^\xEF\xBB\xBF//' "$out/$c.md" >> "$summary"; else echo "Statute could not finish the **$c** check. See the job log." >> "$summary"; fi
+          if [ "$STATUTE_FIX" = 1 ] && [ -f "$dir/loop.md" ]; then
+            sed '1s/^\xEF\xBB\xBF//' "$dir/loop.md" >> "$summary"
+          elif [ -f "$dir/$c.md" ]; then sed '1s/^\xEF\xBB\xBF//' "$dir/$c.md" >> "$summary"
+          else echo "Statute could not finish the **$c** check. See the job log." >> "$summary"; fi
           printf '\n\n' >> "$summary"
         done
         echo "verdict=$worst" >> "$GITHUB_OUTPUT"
+        echo "fixed=${fixed# }" >> "$GITHUB_OUTPUT"
         cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Push the fix Kane proved
+      id: push
+      if: steps.run.outputs.fixed != ''
+      shell: bash
+      env:
+        FIXED: ${{ steps.run.outputs.fixed }}
+        STATUTE_APP: ${{ inputs.app }}
+      run: |
+        git config user.name "statute[bot]"
+        git config user.email "statute-bot@users.noreply.github.com"
+        git add -A -- "$STATUTE_APP" ':(exclude,glob)**/node_modules/**' ':(exclude,glob)**/statute-report/**'
+        if git diff --cached --quiet; then echo "Nothing to commit."; exit 0; fi
+        git commit -m "Fix $FIXED: Statute found the violation, Claude Code fixed it, Kane proved the fix"
+        git push origin "HEAD:${GITHUB_HEAD_REF}"
+        echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
     - name: Keep the case file
       if: always() && steps.plan.outputs.checks != ''
@@ -139,6 +191,8 @@ runs:
       env:
         SUMMARY: ${{ runner.temp }}/statute-report/summary.md
         HAS_RUN: ${{ steps.plan.outputs.checks != '' }}
+        PUSHED: ${{ steps.push.outputs.sha }}
+        FIXED: ${{ steps.run.outputs.fixed }}
       with:
         github-token: ${{ inputs.github-token }}
         script: |
@@ -146,6 +200,7 @@ runs:
           let body = "";
           try { body = fs.readFileSync(process.env.SUMMARY, "utf8"); } catch { body = "Statute could not finish. See the job log."; }
           const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          if (process.env.PUSHED) body += `**Fixed and proven.** Claude Code fixed ${process.env.FIXED}, Kane checked the page again and it passed, so Statute pushed the fix to this pull request as ${process.env.PUSHED}.\n\n`;
           if (process.env.HAS_RUN === "true") body += `---\nCase file with Kane's screenshots: download **statute-case-file** from [this run](${run}).`;
           const marker = "<!-- statute:check -->";
           const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number: context.issue.number, per_page: 100 });

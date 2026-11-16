@@ -167,6 +167,7 @@ function writeTimeline(out, pack, timeline, spent, fixed) {
 // and rebuild each case file. Nothing is sent to Kane.
 function replay(only) {
   const base = path.join(ROOT, "replays");
+  if (!fs.existsSync(base)) { console.error("This copy of Statute has no recorded runs (replays/). Get them with: git clone https://github.com/miracle352/statute"); process.exit(1); }
   const names = fs.readdirSync(base).filter((n) => fs.existsSync(path.join(base, n, "loop.json")) && (!only || n === only));
   if (!names.length) { console.error("No recorded runs found in replays/."); process.exit(1); }
   for (const name of names) {
@@ -207,8 +208,28 @@ function resetDemo() {
   console.log("Demo store reset: its compliance bugs are back.");
 }
 
+const HELP = `Statute: Kane CLI checks your app against consumer law in a real browser. Code, not a model, decides the verdict.
+
+  npx statute demo                                   see it work: re-judge recorded Kane runs, no account, no credits
+  npx statute check consent --url <url>              Kane visits, clicks Reject, and Statute reports what still tracked
+  npx statute check price   --url <url>              is the price shown the price paid at checkout?
+  npx statute check cancel  --url <url>              can a subscription be cancelled as easily as it was started?
+  npx statute fix consent --url <url> --start "<cmd>" --app <dir>
+                                                     Kane finds it, Claude Code fixes it, Kane proves it
+  npx statute init [--live https://your-site.com] [--fix]
+                                                     add the GitHub workflows: every PR, and production every night
+  npx statute hook                                   Claude Code Stop hook: no "done" until Kane passes
+  npx statute mcp                                    MCP server: gives any agent a statute_check tool
+
+Checks need Kane CLI: npm install -g @testmuai/kane-cli, then kane-cli login
+(or set LT_USERNAME and LT_ACCESS_KEY). Docs: https://github.com/miracle352/statute`;
+
 async function main() {
   const [cmd, packId] = process.argv.slice(2);
+  if (!cmd || cmd === "help" || cmd === "--help" || cmd === "-h") { console.log(HELP); return; }
+  if (cmd === "--version" || cmd === "-v") { console.log(require("../package.json").version); return; }
+  if (cmd === "init") return require("./init.js")();
+  if (cmd === "demo") return replay(packId);
   if (cmd === "reset-demo") return resetDemo();
   if (cmd === "mcp") return require("./mcp.js");
   if (cmd === "hook") return require("./hook.js");
@@ -243,6 +264,10 @@ async function main() {
     process.exit(r.result.verdict === "pass" ? 0 : r.result.verdict === "violation" ? 1 : 3);
   }
   if (!opts.url || opts.url === true) { console.error("--url is required\n\n" + usage); process.exit(2); }
+  if (!kane.available()) {
+    console.error("Statute needs Kane CLI to visit the site.\n  npm install -g @testmuai/kane-cli\n  kane-cli login        (or set LT_USERNAME and LT_ACCESS_KEY)\n\nNo account yet? Free credits: https://www.testmuai.com/kane-cli/\nTo see Statute work without Kane: npx statute demo");
+    process.exit(3);
+  }
   if (cmd === "check") {
     fs.rmSync(path.join(out, "loop.json"), { force: true });
     const r = await check(pack, opts);

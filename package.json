@@ -1,7 +1,7 @@
 {
   "name": "statute",
-  "version": "0.1.0",
-  "description": "Laws that test themselves. Kane CLI walks your app like a real visitor; Statute checks what it recorded against the law.",
+  "version": "0.2.0",
+  "description": "Consumer-law checks your coding agent can't skip. Kane CLI visits your app in a real browser; code, not a model, judges what it recorded.",
   "bin": {
     "statute": "bin/statute.js",
     "statute-mcp": "bin/mcp.js",
@@ -26,16 +26,34 @@
   },
   "license": "MIT",
   "files": [
-    "bin",
+    "bin/statute.js",
+    "bin/init.js",
+    "bin/scope.js",
+    "bin/mcp.js",
+    "bin/hook.js",
     "src",
     "rules",
-    "server",
-    "site",
-    "demo-store",
-    "examples",
     "replays",
-    "census/results.json",
-    "Dockerfile",
-    "README.md"
-  ]
+    "action.yml",
+    "README.md",
+    "site/assets/fonts"
+  ],
+  "keywords": [
+    "kane-cli",
+    "gdpr",
+    "cookie-consent",
+    "compliance",
+    "testing",
+    "claude-code",
+    "mcp",
+    "github-action",
+    "dark-patterns"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/miracle352/statute.git"
+  },
+  "homepage": "https://statute-production.up.railway.app",
+  "bugs": "https://github.com/miracle352/statute/issues",
+  "author": "0xMiiracle"
 }

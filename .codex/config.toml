@@ -1,0 +1,6 @@
+[mcp_servers.statute]
+command = "node"
+args = [
+    'C:\Users\IYANUOLUWA\statute\bin\statute.js',
+    "mcp",
+]

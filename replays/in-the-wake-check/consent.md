@@ -27,6 +27,6 @@ Load each tracker listed above only after the visitor accepts. Before a choice, 
 
 ## Evidence
 
-- Sealed Kane evidence pack: `C:\Users\IYANUOLUWA\statute\statute-report\evidence\consent-1794850070387.evidence` (open with `kane-cli evidence serve <path>`)
+- Sealed Kane evidence pack: `statute-report\evidence\consent-1794850070387.evidence` (open with `kane-cli evidence serve <path>`)
 - Kane run: https://test-manager.lambdatest.com/projects/01M7E4JR87M8V8X3PY5SPEP2E6/test-cases/01M7JPA5RPHYZMWZSRK6A0BQFD/dashboard/share/US_LK5DHP7GHEDPQQ3OGDHG38EX97X3ETPA9F1Q2YDP2QPFOMN4467TF68XSK8LWAD4?type=summary&agentView=true&fqdn=summary-page
 - Credits used: 20.0

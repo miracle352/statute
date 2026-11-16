@@ -44,7 +44,7 @@ Statute can sit inside the coding agent itself, so the agent hears from Kane wit
 
 **As an MCP server.** Any agent that speaks MCP gets two tools: `statute_check` (Kane checks a page against a rule; the verdict and evidence come back into the conversation) and `statute_rules` (the rules and the laws behind them).
 
-    claude mcp add statute -- npx -y github:miracle352/statute mcp
+    claude mcp add statute -- npx -y statute mcp
 
 Then ask the agent to "check consent on http://localhost:3000 with statute", or let it decide to after it touches a cookie banner, a price or a subscription flow.
 
@@ -56,7 +56,7 @@ Then ask the agent to "check consent on http://localhost:3000 with statute", or 
 
 ```json
 { "hooks": { "Stop": [ { "hooks": [ { "type": "command", "timeout": 900,
-  "command": "npx -y github:miracle352/statute hook" } ] } ] } }
+  "command": "npx -y statute hook" } ] } ] } }
 ```
 
 `check` can be a list, for example `["consent", "price"]`. Projects without a `statute.json` are left alone.

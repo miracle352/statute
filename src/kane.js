@@ -115,4 +115,10 @@ function collect(child, onEvent, timeout = 300) {
   });
 }
 
-module.exports = { run, cloudEndpoint };
+// True when kane-cli is installed globally or on PATH.
+function available() {
+  if (findKane()) return true;
+  try { execSync(process.platform === "win32" ? "where kane-cli" : "command -v kane-cli", { stdio: "ignore" }); return true; } catch { return false; }
+}
+
+module.exports = { available, run, cloudEndpoint };

@@ -152,7 +152,11 @@ async function agentRound(pack, reportFile, opts, timeline, round, save) {
 }
 
 function writeTimeline(out, pack, timeline, spent, fixed) {
-  const L = [`# ${fixed ? "FIXED" : "NOT FIXED"}: ${pack.title}`, ""];
+  const changed = timeline.some((t) => t.step === "agent");
+  const head = fixed ? (changed ? "FIXED" : "PASSED") : (changed ? "NOT FIXED" : "VIOLATION");
+  const note = fixed && !changed ? "Kane found nothing to fix, so Claude Code was not called." : fixed ? "Kane found a violation, Claude Code fixed it, and Kane passed the fix." : "";
+  const L = [`### ${head}: ${pack.title}`, ""];
+  if (note) L.push(note, "");
   for (const t of timeline) {
     if (t.step === "kane") L.push(`- **Round ${t.round} · Kane · ${t.pack}: ${t.verdict.toUpperCase()}**. ${t.why}${t.run ? ` [Kane run](${t.run})` : ""}`);
     else L.push(`- **Round ${t.round} · Claude Code fixed the app:** ${t.summary.replace(/\n+/g, " ")}`);

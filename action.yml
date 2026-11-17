@@ -152,14 +152,14 @@ runs:
           case $code in 0) v=pass ;; 1) v=violation ;; *) v=inconclusive ;; esac
           if [ "$STATUTE_FIX" = 1 ] && grep -q "Claude Code fixed" "$dir/loop.md" 2>/dev/null && [ "$code" = 0 ]; then fixed="$fixed $c"; fi
           if [ "$v" = violation ]; then worst=violation; elif [ "$v" = inconclusive ] && [ "$worst" = pass ]; then worst=inconclusive; fi
-          if [ -f "$RUNNER_TEMP/statute-scope.json" ]; then
-            why=$(node -e 'const r=require(process.argv[1]).reasons[process.argv[2]]||[];console.log(r.slice(0,3).map(x=>"`"+x.file+"` ("+x.why+")").join(", "))' "$RUNNER_TEMP/statute-scope.json" "$c")
-            [ -n "$why" ] && printf '_Ran because this change touches %s._\n\n' "$why" >> "$summary"
-          fi
           if [ "$STATUTE_FIX" = 1 ] && [ -f "$dir/loop.md" ]; then
             sed '1s/^\xEF\xBB\xBF//' "$dir/loop.md" >> "$summary"
           elif [ -f "$dir/$c.md" ]; then sed '1s/^\xEF\xBB\xBF//' "$dir/$c.md" >> "$summary"
           else echo "Statute could not finish the **$c** check. See the job log." >> "$summary"; fi
+          if [ -f "$RUNNER_TEMP/statute-scope.json" ]; then
+            why=$(node -e 'const r=require(process.argv[1]).reasons[process.argv[2]]||[];console.log(r.slice(0,3).map(x=>"`"+x.file+"` ("+x.why+": `"+x.line.replace(/`/g,"").slice(0,60)+"`)").join(", "))' "$RUNNER_TEMP/statute-scope.json" "$c")
+            [ -n "$why" ] && printf '\n_Statute ran this check because the change touches %s._\n' "$why" >> "$summary"
+          fi
           printf '\n\n' >> "$summary"
         done
         echo "verdict=$worst" >> "$GITHUB_OUTPUT"

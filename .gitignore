@@ -11,3 +11,4 @@ _hx.tgz
 _lumen/
 # recorded Kane runs used by `statute demo` (personal details scrubbed)
 !replays/**/*.evidence
+_pr2/

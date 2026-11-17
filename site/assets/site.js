@@ -228,7 +228,9 @@
 
   /* ---------- live audits ---------- */
   const form = $("#auditForm"), input = $("#urlInput"), own = $("#ownBox"), msg = $("#formMsg"), runBtn = $("#runBtn"), demoBtn = $("#demoBtn"), quota = $("#quota");
-  let es = null;
+  let es = null, last = null;
+  // A judges' link carries ?key=..., which lets live runs skip the daily caps.
+  const KEY = new URLSearchParams(location.search).get("key") || undefined;
 
   async function refreshQuota() {
     try {
@@ -244,6 +246,8 @@
 
   async function start(body, label) {
     { const fx = $("#fixit"); if (fx) fx.hidden = true; } // a new live audit starts clean
+    body = { ...body, key: KEY };
+    last = { body, label };
     say("");
     busy(true);
     let r;
@@ -261,7 +265,7 @@
     reset(label, r.cached ? "Saved result from the last 24 hours" : "Connecting", !r.cached);
     screen.removeAttribute("src");
     screen.alt = "Waiting for the first frame from Kane's browser";
-    fig.dataset.wait = r.cached ? "Loading the saved audit" : "Starting a real Chrome for Kane";
+    fig.dataset.wait = r.cached ? "Loading the saved audit" : body.country ? "Kane is using a TestMu AI cloud browser in Germany. The cloud has no live view: Kane's verdict and screenshots arrive when it finishes, in about two minutes" : "Starting a real Chrome for Kane";
     fig.classList.add("waiting");
     setVerdict("running", r.cached ? "Loading the saved audit." : "Starting a real Chrome for Kane.");
     cap.textContent = "Waiting for Kane";
@@ -274,7 +278,7 @@
     let rejectAt = null;
     es.addEventListener("queued", (e) => {
       const d = JSON.parse(e.data);
-      if (d.position > 1) setVerdict("running", `In line: position ${d.position}. Kane runs one audit at a time.`);
+      if (d.position > 1) setVerdict("running", `In line: position ${d.position}, about ${d.ahead || 2} minutes. Kane runs one audit at a time, so every run is clean.`);
     });
     es.addEventListener("started", () => { if (!cached) mode.textContent = "Live"; setVerdict("running", "Kane is opening the site in a real browser."); });
     es.addEventListener("frame", (e) => { const d = JSON.parse(e.data); show(`data:image/jpeg;base64,${d.data}`); });
@@ -295,6 +299,12 @@
     es.addEventListener("verdict", (e) => {
       const d = JSON.parse(e.data);
       setVerdict(d.verdict, esc(d.why), d.caseUrl);
+      if (d.verdict === "inconclusive" && /location/i.test(d.why || "") && last && !last.body.country && !last.body.demo) {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "linkish eu-retry"; b.textContent = "Try again as a visitor in Germany, with a TestMu AI cloud browser";
+        b.addEventListener("click", () => start({ ...last.body, country: "DE" }, `${last.label} (visitor in Germany)`));
+        vtext.append(" ", b);
+      }
       mode.textContent = cached ? "Saved result" : "Finished";
       mode.classList.remove("live");
       busy(false); es.close(); refreshQuota();

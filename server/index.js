@@ -60,7 +60,8 @@ async function startAudit(req, res) {
     } catch (e) { return sendJson(res, 400, { error: e.message }); }
   }
   try {
-    const r = audit.create({ target, pack, ip: clientIp(req) });
+    const country = body.country && !body.demo ? String(body.country).toUpperCase() : undefined;
+    const r = audit.create({ target, pack, ip: clientIp(req), country, key: body.key });
     sendJson(res, 200, { ...r, status: audit.status() });
   } catch (e) {
     sendJson(res, e.code || 500, { error: e.message });
@@ -77,7 +78,9 @@ const server = http.createServer(async (req, res) => {
   if (p === "/api/audit" && req.method === "POST") return startAudit(req, res);
   if (p === "/api/loop" && req.method === "GET") return sendJson(res, 200, audit.loopStatus());
   if (p === "/api/loop" && req.method === "POST") {
-    try { return sendJson(res, 200, audit.createLoop({ ip: clientIp(req) })); }
+    let body = {};
+    try { body = JSON.parse((await readBody(req)) || "{}"); } catch {}
+    try { return sendJson(res, 200, audit.createLoop({ ip: clientIp(req), key: body.key })); }
     catch (e) { return sendJson(res, e.code || 500, { error: e.message }); }
   }
   let m = p.match(/^\/api\/audit\/([a-f0-9]{12})\/stream$/);

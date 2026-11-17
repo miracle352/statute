@@ -79,23 +79,29 @@ function status() {
 }
 
 // Create (or reuse from cache) an audit. `target` is { url, label, internal }.
-function create({ target, pack, ip }) {
+const isJudge = (k) => !!process.env.JUDGE_KEY && k === process.env.JUDGE_KEY;
+const COUNTRIES = { DE: "Germany", FR: "France", NL: "the Netherlands", IE: "Ireland", GB: "the UK" };
+
+function create({ target, pack, ip, country, key: judgeKey }) {
   today();
-  const key = `${pack}|${target.label}`;
+  if (country && !COUNTRIES[country]) throw Object.assign(new Error("Unknown country."), { code: 400 });
+  if (country && !(process.env.LT_USERNAME && process.env.LT_ACCESS_KEY)) throw Object.assign(new Error("Visiting from another country isn't set up on this server."), { code: 503 });
+  const judge = isJudge(judgeKey);
+  const key = `${pack}|${target.label}|${country || ""}`;
   const hit = state.cache[key];
   if (hit && Date.now() - hit.at < CACHE_MS && fs.existsSync(path.join(DATA, "audits", hit.id, "result.json"))) {
     return { id: hit.id, cached: true };
   }
-  if (state.used >= DAILY_CAP) throw Object.assign(new Error(`Today's ${DAILY_CAP} live audits are used up. Recorded audits are still available below, and the counter resets at midnight UTC.`), { code: 429 });
-  if (!target.internal && (state.ips[ip] || 0) >= PER_IP) throw Object.assign(new Error(`You've run ${PER_IP} live audits today. Try again tomorrow, or run Statute yourself from GitHub.`), { code: 429 });
+  if (state.used >= DAILY_CAP && !judge) throw Object.assign(new Error(`Today's ${DAILY_CAP} live audits are used up. Recorded audits are still available below, and the counter resets at midnight UTC.`), { code: 429 });
+  if (!target.internal && !judge && (state.ips[ip] || 0) >= PER_IP) throw Object.assign(new Error(`You've run ${PER_IP} live audits today. Try again tomorrow, or run Statute yourself from GitHub.`), { code: 429 });
   state.used++;
   if (!target.internal) state.ips[ip] = (state.ips[ip] || 0) + 1;
   save();
   const id = crypto.randomBytes(6).toString("hex");
-  const job = { id, pack, target, label: target.label, status: "queued", events: [], listeners: new Set(), key, createdAt: Date.now() };
+  const job = { id, pack, target, country: country || undefined, label: target.label, status: "queued", events: [], listeners: new Set(), key, createdAt: Date.now() };
   jobs.set(id, job);
   queue.push(job);
-  emit(job, "queued", { position: queue.length + (running ? 1 : 0), url: target.label, pack });
+  emit(job, "queued", { position: queue.length + (running ? 1 : 0), url: target.label, pack, ahead: ahead(job), country: country ? COUNTRIES[country] : null });
   pump();
   return { id, cached: false };
 }
@@ -113,7 +119,7 @@ function loadFinished(id) {
 async function pump() {
   if (running || !queue.length) return;
   running = queue.shift();
-  queue.forEach((j, i) => emit(j, "queued", { position: i + 2 }));
+  queue.forEach((j, i) => emit(j, "queued", { position: i + 2, ahead: ahead(j) }));
   try { await (running.kind === "loop" ? require("./loop").runLoop(running) : runJob(running)); } catch (e) {
     running.status = "error";
     emit(running, "error", { message: e.message || String(e) });
@@ -229,15 +235,23 @@ async function runDirect({ url, label, pack = "consent", country, onEvent }) {
   return job;
 }
 
+function ahead(job) {
+  const mins = (j) => (j.kind === "loop" ? 5 : 2);
+  let m = running && running !== job ? mins(running) : 0;
+  for (const j of queue) { if (j === job) break; m += mins(j); }
+  return m;
+}
+
 // Queue a live loop (Kane finds it, Claude Code fixes it, Kane proves it).
-function createLoop({ ip }) {
+function createLoop({ ip, key: judgeKey }) {
   today();
-  const cap = Number(process.env.LOOP_DAILY_CAP || 6);
+  const judge = isJudge(judgeKey);
+  const cap = Number(process.env.LOOP_DAILY_CAP || 10);
   state.loops = state.loops || 0;
   state.loopIps = state.loopIps || {};
   if (!process.env.CLAUDE_CODE_OAUTH_TOKEN && !process.env.ANTHROPIC_API_KEY) throw Object.assign(new Error("Live loops are switched off on this server (no Claude Code token). Watch the recorded run above."), { code: 503 });
-  if (state.loops >= cap) throw Object.assign(new Error(`Today's ${cap} live loops are used up. Watch the recorded run above, or the last live one; the counter resets at midnight UTC.`), { code: 429 });
-  if ((state.loopIps[ip] || 0) >= 1) throw Object.assign(new Error("You've run a live loop today. Thanks for watching; try again tomorrow."), { code: 429 });
+  if (state.loops >= cap && !judge) throw Object.assign(new Error(`Today's ${cap} live runs are done (each uses real Kane credits). The recorded run above is always here, and the counter resets at midnight UTC.`), { code: 429 });
+  if (!judge && (state.loopIps[ip] || 0) >= 1) throw Object.assign(new Error("Thanks for running one. Each live run uses real Kane credits, so it's one per visitor a day; the recorded run above is always here."), { code: 429 });
   state.loops++;
   state.loopIps[ip] = (state.loopIps[ip] || 0) + 1;
   save();
@@ -245,14 +259,14 @@ function createLoop({ ip }) {
   const job = { id, kind: "loop", pack: "consent", target: { label: "Lumen with Google's tag pasted in", internal: true }, label: "live loop", status: "queued", events: [], listeners: new Set(), createdAt: Date.now() };
   jobs.set(id, job);
   queue.push(job);
-  emit(job, "queued", { position: queue.length + (running ? 1 : 0) });
+  emit(job, "queued", { position: queue.length + (running ? 1 : 0), ahead: ahead(job) });
   pump();
   return { id };
 }
 
 function loopStatus() {
   today();
-  const cap = Number(process.env.LOOP_DAILY_CAP || 6);
+  const cap = Number(process.env.LOOP_DAILY_CAP || 10);
   return { enabled: !!(process.env.CLAUDE_CODE_OAUTH_TOKEN || process.env.ANTHROPIC_API_KEY), cap, left: Math.max(0, cap - (state.loops || 0)), busy: !!running || queue.length > 0, last: state.lastLoop || null };
 }
 function rememberLoop(id) { state.lastLoop = id; save(); }

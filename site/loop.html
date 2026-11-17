@@ -457,7 +457,7 @@
     enterLive();
     es = new EventSource(`/api/audit/${id}/stream`);
     let trackers = 0;
-    es.addEventListener("queued", (e) => { const d = JSON.parse(e.data); if (d.position > 1) liveCaption(`Waiting for the server: ${d.position - 1} run ahead of yours.`, "One browser at a time, so each run is clean."); });
+    es.addEventListener("queued", (e) => { const d = JSON.parse(e.data); if (d.position > 1) liveCaption(`Waiting for the server: ${d.position - 1} run${d.position > 2 ? "s" : ""} ahead of yours, about ${d.ahead || 5} minutes.`, "One browser at a time, so each run is clean. Keep this page open; your run starts on its own."); });
     es.addEventListener("phase", (e) => {
       const d = JSON.parse(e.data);
       liveTab(PHASE_TAB[d.phase] ?? 0);
@@ -520,7 +520,7 @@
       const st = await (await fetch("/api/loop", { cache: "no-store" })).json();
       if (!st.enabled) return;
       $("livebar").hidden = false;
-      $("liveleft").textContent = st.left ? `${st.left} of ${st.cap} live runs left today.` : "Today's live runs are used up.";
+      $("liveleft").textContent = st.left ? `Each run uses real Kane credits, so there are ${st.cap} a day; ${st.left} left today.` : "Today's live runs are done; each uses real Kane credits. The recorded run above is always here, and the counter resets at midnight UTC.";
       $("golive").disabled = !st.left;
       if (st.last) { const a = $("lastlive"); a.hidden = false; a.href = `/audits/${st.last}/`; }
     } catch {}
@@ -528,7 +528,8 @@
   $("golive").addEventListener("click", async () => {
     const msg = $("livemsg"); msg.className = "livemsg"; msg.textContent = "Starting...";
     try {
-      const r = await fetch("/api/loop", { method: "POST" });
+      const key = new URLSearchParams(location.search).get("key") || undefined;
+      const r = await fetch("/api/loop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Could not start.");
       msg.textContent = "Running live in the window above.";

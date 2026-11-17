@@ -30,6 +30,10 @@ const RULES = {
 // Files whose changes never affect what a visitor's browser does.
 const IGNORE = /(^|\/)(README|CHANGELOG|LICENSE)[^/]*$|\.(md|txt|lock)$|(^|\/)(test|tests|__tests__|spec|docs)\//i;
 
+// Code glues words together (SERVICE_FEE, cartTotal, cancelSubscription); split them
+// so "fee", "total" and "cancel" are seen as words.
+const splitWords = (line) => line.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_\-]+/g, " ");
+
 function parseDiff(text) {
   const files = [];
   let cur = null;
@@ -49,7 +53,8 @@ function scope(diffText) {
   for (const [check, rules] of Object.entries(RULES)) {
     for (const f of files) {
       for (const line of f.lines) {
-        const r = rules.find((x) => x.re.test(line));
+        const words = splitWords(line);
+        const r = rules.find((x) => x.re.test(line) || x.re.test(words));
         if (r) {
           (hits[check] = hits[check] || []).push({ file: f.file, why: r.why, line: line.trim().slice(0, 120) });
           break;

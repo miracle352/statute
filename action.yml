@@ -82,12 +82,20 @@ runs:
         STATUTE_CHECK: ${{ inputs.check }}
         BASE_SHA: ${{ github.event.pull_request.base.sha }}
         HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        LT_USERNAME: ${{ inputs.lt-username }}
+        LT_ACCESS_KEY: ${{ inputs.lt-access-key }}
       run: |
         checks="${STATUTE_CHECK//,/ }"
         # A commit Statute pushed itself was already proven by Kane in the run that made it.
         if [ -n "$HEAD_SHA" ] && [ "$(git log -1 --format=%ae "$HEAD_SHA" 2>/dev/null)" = "statute-bot@users.noreply.github.com" ]; then
           echo "The latest commit is Statute's own fix, already proven by Kane. Nothing to run."
           echo "self=true" >> "$GITHUB_OUTPUT"
+          echo "checks=" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        if [ -z "$LT_USERNAME" ] || [ -z "$LT_ACCESS_KEY" ]; then
+          echo "::warning title=Statute::No Kane CLI credentials in this run, so Kane was not started. Pull requests from forks don't receive repository secrets."
+          echo "nocreds=true" >> "$GITHUB_OUTPUT"
           echo "checks=" >> "$GITHUB_OUTPUT"
           exit 0
         fi
@@ -122,6 +130,7 @@ runs:
         LT_USERNAME: ${{ inputs.lt-username }}
         LT_ACCESS_KEY: ${{ inputs.lt-access-key }}
         STATUTE_CHECKS: ${{ steps.plan.outputs.checks }}
+        STATUTE_NOCREDS: ${{ steps.plan.outputs.nocreds }}
         STATUTE_URL: ${{ inputs.url }}
         STATUTE_START: ${{ inputs.start }}
         STATUTE_APP: ${{ inputs.app }}
@@ -131,6 +140,12 @@ runs:
         set +e
         out="$RUNNER_TEMP/statute-report"; mkdir -p "$out"
         summary="$out/summary.md"; : > "$summary"
+        if [ "$STATUTE_NOCREDS" = true ]; then
+          echo "verdict=skipped" >> "$GITHUB_OUTPUT"
+          printf '## Statute: not run\n\nThis run has no Kane CLI credentials, so Kane could not visit the app. Pull requests from forks do not receive repository secrets; a maintainer can run the check from a branch in this repository.\n' > "$summary"
+          cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+        fi
         if [ -z "$STATUTE_CHECKS" ]; then
           echo "verdict=skipped" >> "$GITHUB_OUTPUT"
           {

@@ -8,6 +8,7 @@
     "statute-hook": "bin/hook.js"
   },
   "scripts": {
+    "test": "node --test test/*.test.js",
     "start": "node server/index.js",
     "store": "node demo-store/server.js",
     "check:consent": "node bin/statute.js check consent --url http://localhost:4173 --start \"node demo-store/server.js\"",
@@ -29,6 +30,7 @@
     "bin/statute.js",
     "bin/init.js",
     "bin/scope.js",
+    "bin/shots.js",
     "bin/mcp.js",
     "bin/hook.js",
     "src",

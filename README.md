@@ -1,5 +1,7 @@
 # Statute
 
+[![Tests](https://github.com/miracle352/statute/actions/workflows/test.yml/badge.svg)](https://github.com/miracle352/statute/actions/workflows/test.yml)
+
 **Your agent's code works. Is it legal?**
 
 Ask Claude Code to "add Google Analytics" and it will usually add a cookie banner too, and tell you cookies are "only set if you accept". Is that true? Paste Google's own tag the way its setup page says, and analytics fires before anyone is asked. Either way the site works and every functional test passes, and nobody has checked the one thing the law cares about. Statute is the check your agent can't skip: Kane CLI opens your app in a real Chrome, clicks Reject, reads the checkout, tries to cancel, and records everything. Code, not a model, judges Kane's sealed evidence against the law. On a violation the report goes back to your agent, and Kane returns to prove the fix. A fix only counts when Kane says so.
@@ -12,6 +14,8 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 
 | Time | What | Where |
 |---|---|---|
+| 2 min | **The whole loop on a real repo, no human touching code.** A developer pastes Google's tag the way Google's setup page says. Statute reads the diff, Kane finds tracking with no way to refuse, Claude Code adds consent, Kane proves Reject and Accept, and Statute pushes the proven fix to the pull request | [miracle352/lumen#2](https://github.com/miracle352/lumen/pull/2) |
+| 1 min | **The agent's claim, verified.** Asked only to "add Google Analytics", Claude Code added a consent banner and said cookies are set only after Accept. Kane checked: true, with screenshots | [miracle352/lumen#1](https://github.com/miracle352/lumen/pull/1) |
 | 1 min | Watch Kane audit our demo shop live, in a real browser on our server | [statute-production.up.railway.app](https://statute-production.up.railway.app) → "Watch Kane audit our demo shop" |
 | 1 min | Real open-source code: Kane finds HAXCMS loading Google Analytics with no way to refuse, Claude Code adds a banner, Kane proves Decline and Accept. The maintainer closed the PR to solve it in HAXCMS's plugin system instead | [Case file](https://statute-production.up.railway.app/cases/haxcms.html) · [PR haxtheweb/haxcms-nodejs#289](https://github.com/haxtheweb/haxcms-nodejs/pull/289) · [issue #2955](https://github.com/haxtheweb/issues/issues/2955) |
 | 1 min | A live public site, confirmed: cruisinginthewake.com sends 6 Google Analytics hits with a visitor ID before any choice, matching the site's own open issue | [Case file](https://statute-production.up.railway.app/cases/in-the-wake.html) · [their issue #1684](https://github.com/jsschrstrcks1/InTheWake/issues/1684) |
@@ -173,6 +177,8 @@ Guard rails: public `http`/`https` sites only (private, internal and metadata ad
 Node 22, [Kane CLI](https://www.npmjs.com/package/@testmuai/kane-cli) (`npm i -g @testmuai/kane-cli && kane-cli login`), and Claude Code for the fix loop. No npm install: Statute has no dependencies.
 
     npm run demo              replay recorded runs, no credits
+    npm test                  40 tests: every judge, the diff check, and a golden test that
+                              re-judges the 10 recorded Kane runs and fails if a verdict changes
     npm start                 the site on http://localhost:8080, live audits included
     npm run check:consent     one Reject check on the demo shop
     npm run demo:fix          find, fix and prove on the demo shop

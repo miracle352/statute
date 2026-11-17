@@ -10,7 +10,8 @@
       "step": "kane",
       "pack": "cancel",
       "evidence": "evidence/cancel-1794754943192.evidence",
-      "at": "2026-11-15T15:02:23.000Z"
+      "at": "2026-11-15T15:02:23.000Z",
+      "verdict": "violation"
     },
     {
       "round": 1,
@@ -24,7 +25,8 @@
       "step": "kane",
       "pack": "cancel",
       "evidence": "evidence/cancel-1794755110410.evidence",
-      "at": "2026-11-15T15:05:10.000Z"
+      "at": "2026-11-15T15:05:10.000Z",
+      "verdict": "pass"
     }
   ]
 }

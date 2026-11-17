@@ -81,8 +81,16 @@ runs:
       env:
         STATUTE_CHECK: ${{ inputs.check }}
         BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       run: |
         checks="${STATUTE_CHECK//,/ }"
+        # A commit Statute pushed itself was already proven by Kane in the run that made it.
+        if [ -n "$HEAD_SHA" ] && [ "$(git log -1 --format=%ae "$HEAD_SHA" 2>/dev/null)" = "statute-bot@users.noreply.github.com" ]; then
+          echo "The latest commit is Statute's own fix, already proven by Kane. Nothing to run."
+          echo "self=true" >> "$GITHUB_OUTPUT"
+          echo "checks=" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
         if [ "$checks" = "auto" ]; then
           if [ -n "$BASE_SHA" ] && git cat-file -e "$BASE_SHA" 2>/dev/null; then
             git diff "$BASE_SHA"...HEAD > "$RUNNER_TEMP/statute.diff"
@@ -108,6 +116,7 @@ runs:
 
     - name: Run the checks
       id: run
+      if: steps.plan.outputs.self != 'true'
       shell: bash
       env:
         LT_USERNAME: ${{ inputs.lt-username }}
@@ -230,7 +239,7 @@ runs:
         if-no-files-found: ignore
 
     - name: Comment on the pull request
-      if: always() && inputs.comment == 'true' && github.event_name == 'pull_request'
+      if: always() && inputs.comment == 'true' && github.event_name == 'pull_request' && steps.plan.outputs.self != 'true'
       uses: actions/github-script@v7
       env:
         SUMMARY: ${{ runner.temp }}/statute-report/summary.md

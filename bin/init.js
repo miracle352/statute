@@ -43,7 +43,7 @@ name: Statute
 on: pull_request
 
 permissions:
-  contents: ${fix ? "write" : "read"}
+  contents: write  # screenshots go to the statute-shots branch${fix ? "; fixes are pushed to the PR" : ""}
   pull-requests: write
 
 jobs:
@@ -75,13 +75,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   issues: write
 
 jobs:
   watch:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: miracle352/statute@main
         with:
           url: ${q(live)}

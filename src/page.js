@@ -357,4 +357,4 @@ ${exhibit}
   return file;
 }
 
-module.exports = { build };
+module.exports = { build, steps };

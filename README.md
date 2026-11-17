@@ -14,7 +14,7 @@ There are no tests to write. The laws are the tests: consent (GDPR and ePrivacy)
 
 Kane isn't a test runner bolted on at the end. Statute uses it three ways:
 
-- **As the runtime.** Kane does the work Statute exists for: it uses the app like a visitor, and its sealed evidence pack (network log, action log, screenshots) is the only input to every verdict. For other people's sites it runs in TestMu's cloud browsers in the site's own country, so the census saw the cookie banners an EU visitor sees.
+- **As the runtime.** Kane does the work Statute exists for: it uses the app like a visitor, and its sealed evidence pack (network log, action log, screenshots) is the only input to every verdict. For the census, Kane ran in TestMu's cloud browsers in each site's own country, so it saw the cookie banners a local visitor sees. (The live site's browser runs in the US.)
 - **As the build loop.** When an agent fixes a violation, the fix only counts once Kane passes it, in Claude Code (a Stop hook or the agent skill) or in CI.
 - **As the safety net.** On every pull request that touches tracking, prices or subscriptions, and on the live site every night.
 

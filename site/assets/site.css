@@ -305,4 +305,5 @@ code { font-family: var(--mono); font-size: .9em; }
 .audit-loop a { color: var(--soft); text-underline-offset: 3px; }
 .audit-loop a:hover { color: var(--text); }
 
-.eu-retry { display: inline; margin-top: 6px; color: var(--mint); text-align: left; }
+.eu-retry { display: block; margin-top: 8px; color: var(--soft); }
+.eu-retry code { color: var(--text); overflow-wrap: anywhere; }

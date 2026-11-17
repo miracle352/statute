@@ -299,11 +299,12 @@
     es.addEventListener("verdict", (e) => {
       const d = JSON.parse(e.data);
       setVerdict(d.verdict, esc(d.why), d.caseUrl);
-      if (d.verdict === "inconclusive" && /location/i.test(d.why || "") && last && !last.body.country && !last.body.demo) {
-        const b = document.createElement("button");
-        b.type = "button"; b.className = "linkish eu-retry"; b.textContent = "Try again as a visitor in Germany, with a TestMu AI cloud browser";
-        b.addEventListener("click", () => start({ ...last.body, country: "DE" }, `${last.label} (visitor in Germany)`));
-        vtext.append(" ", b);
+      if (d.verdict === "inconclusive" && /location/i.test(d.why || "") && last && !last.body.demo) {
+        // Our server's browser is in the US; many sites only ask EU visitors. Running it locally checks what your visitors see.
+        const p = document.createElement("span");
+        p.className = "eu-retry";
+        p.innerHTML = ` Our browser runs in the US, and many sites only ask visitors in the EU. Check from where your visitors are: <code>npx github:miracle352/statute check consent --url ${esc(last.label.replace(/^https?:\/\//, "https://"))}</code>`;
+        vtext.append(p);
       }
       mode.textContent = cached ? "Saved result" : "Finished";
       mode.classList.remove("live");

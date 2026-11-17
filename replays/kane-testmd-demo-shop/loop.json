@@ -1,0 +1,18 @@
+{
+  "title": "Kane CLI test file laws/reject_means_reject_test.md on the demo shop, judged by Statute",
+  "pack": "consent",
+  "url": "https://statute-production.up.railway.app/demo/",
+  "strict": true,
+  "source": "kane-cli testmd run laws/reject_means_reject_test.md, then statute judge consent --latest",
+  "timeline": [
+    {
+      "round": 1,
+      "step": "kane",
+      "pack": "consent",
+      "verdict": "violation",
+      "kaneStatus": "passed",
+      "evidence": "evidence/consent-1794935266000.evidence",
+      "at": "2026-11-17T17:08:00Z"
+    }
+  ]
+}

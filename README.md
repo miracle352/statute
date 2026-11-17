@@ -39,7 +39,7 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | 2 min | Add it to your repo: every pull request, plus production every night | `npx github:miracle352/statute init --fix --live https://your-site.com` |
 | 10 min | Run the whole loop on your machine (Kane CLI and Claude Code needed, about 31 credits) | `npm run demo:fix` |
 
-`demo` needs only Node 22. It re-judges five recorded loops (Lumen PR #2 from GitHub Actions, the demo shop's Reject, price and cancel checks, and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
+`demo` needs only Node 22. It re-judges six recorded runs (Lumen PR #2 from GitHub Actions, the Kane test file on the demo shop, the demo shop's Reject, price and cancel checks, and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
 
 ## The checks
 
@@ -65,6 +65,8 @@ Already use Kane? The laws are plain Kane CLI test files in [`laws/`](laws/). Ka
 kane-cli testmd run laws/reject_means_reject_test.md --variables '{"url":{"value":"https://your-site.com"}}'
 npx github:miracle352/statute judge consent --latest
 ```
+
+Proven on a real run: Kane ran `reject_means_reject_test.md` against the demo shop and reported PASSED, because every step ran. Statute judged the same sealed pack a VIOLATION: Google Analytics and the Meta pixel loaded before any choice and again after Reject, with a visitor ID. Re-judge it yourself with `npx github:miracle352/statute demo kane-testmd-demo-shop`.
 
 There's one file per law (`reject_means_reject`, `accept_still_works`, `price_shown_is_price_paid`, `cancel_as_easy_as_signup`), each judged with `judge consent`, `consent-accept`, `price` or `cancel`. `--latest` reads the newest sealed pack in `.testmuai/evidence/` or your Kane sessions folder.
 
@@ -205,8 +207,8 @@ Guard rails: public `http`/`https` sites only (private, internal and metadata ad
 Node 22, [Kane CLI](https://www.npmjs.com/package/@testmuai/kane-cli) (`npm i -g @testmuai/kane-cli && kane-cli login`), and Claude Code for the fix loop. No npm install: Statute has no dependencies.
 
     npm run demo              replay recorded runs, no credits
-    npm test                  43 tests: every judge, the diff check, and a golden test that
-                              re-judges the 13 recorded Kane runs and fails if a verdict changes
+    npm test                  44 tests: every judge, the diff check, and a golden test that
+                              re-judges the 14 recorded Kane runs and fails if a verdict changes
     npm start                 the site on http://localhost:8080, live audits included
     npm run check:consent     one Reject check on the demo shop
     npm run demo:fix          find, fix and prove on the demo shop
@@ -235,7 +237,7 @@ To host it: the `Dockerfile` installs Chrome and Kane CLI. Set `LT_USERNAME` and
     bin/shots.js         pulls Kane's key screenshots out of the evidence for PR comments
     laws/                the three laws as Kane CLI test files (kane-cli testmd run)
     skill/statute/       the agent skill (statute skill)
-    test/                43 tests, including a golden test over 13 recorded Kane runs
+    test/                44 tests, including a golden test over 14 recorded Kane runs
     bin/census.js        the Census runner, --rejudge
     server/              the live site, audit queue, Chrome and its live view
     demo-store/          Lumen, a shop with deliberate compliance bugs

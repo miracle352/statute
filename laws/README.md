@@ -1,9 +1,14 @@
 # Statute's laws as Kane CLI tests
 
+Proven on a real run: on the demo shop Kane reported PASSED (the steps ran) and Statute judged the same pack a VIOLATION. The recorded run is in `replays/kane-testmd-demo-shop`.
+
 Each law is a plain Kane CLI test file. Kane runs it and seals the evidence; Statute's code reads the sealed pack and decides the verdict against the law. Kane's own pass or fail only says the steps ran.
 
 ```bash
 kane-cli testmd run laws/reject_means_reject_test.md --variables '{"url":{"value":"https://your-site.com"}}'
+# PowerShell: write the variables to a file instead
+#   '{"url":{"value":"https://your-site.com"}}' | Out-File -Encoding ascii vars.json
+#   kane-cli testmd run laws\reject_means_reject_test.md --variables-file vars.json
 npx github:miracle352/statute judge consent --latest
 ```
 

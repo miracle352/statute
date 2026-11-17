@@ -114,6 +114,7 @@
   .controls button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
 
   .livebar { margin-top: 28px; padding: clamp(20px, 3vw, 32px); border: 1px solid rgba(95,227,167,.35); border-radius: 18px; background: radial-gradient(120% 140% at 0% 0%, rgba(95,227,167,.10), transparent 60%), var(--panel); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 32px; align-items: center; }
+  .livebar[hidden] { display: none; }
   .livebar h2 { font: 400 clamp(26px, 3vw, 38px)/1.1 var(--serif); }
   .livebar p { color: var(--soft); margin-top: 8px; max-width: 70ch; }
   .livebtns { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
@@ -134,7 +135,14 @@
   .proofs li span { color: var(--soft); font-size: 15px; }
   .proofs a { color: var(--text); font-size: 14px; white-space: nowrap; }
   .proofs code { color: var(--text); font-size: 13px; }
-  .proofs .cmd { grid-template-columns: 1fr; gap: 6px; }
+  .proofs .cmdrow { grid-template-columns: 1fr; gap: 10px; }
+  .proofs .cmd { justify-content: space-between; min-width: 0; padding: 6px 6px 6px 18px; border-radius: 14px; }
+  .proofs .cmd code { color: var(--mint); font-size: 13.5px; overflow-x: auto; white-space: nowrap; min-width: 0; scrollbar-width: none; }
+  .proofs .cmd .btn { flex: none; }
+  .copy.done { background: rgba(95,227,167,.18); color: var(--mint); }
+  /* scroll reveals, staggered, like the home page */
+  .rv { opacity: 0; transform: translateY(22px); filter: blur(6px); transition: opacity .9s var(--ease), transform .9s var(--ease), filter .9s var(--ease); }
+  .rv.in { opacity: 1; transform: none; filter: none; }
   .lp-foot { margin-top: 64px; border-top: 1px solid var(--line); padding: 24px 0 44px; color: var(--faint); font-size: 13px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .lp-foot a { color: var(--soft); }
 
@@ -155,6 +163,7 @@
     .layer, .cursor, .editor .ln, .pr .row { transition: none; }
     .stamp.on { animation: none; opacity: 1; transform: translate(-50%, -50%) rotate(-8deg); }
     .ripple.go, .feed li, .pill { animation: none; }
+    .rv { opacity: 1; transform: none; filter: none; transition: none; }
   }
 </style>
 </head>
@@ -234,8 +243,8 @@
         <li><span>Kane's three runs on TestMu</span><span><a href="https://test-manager.lambdatest.com/projects/01M7J0MNACT6FJN3GTSE6TJ9H7/test-cases/01M7N2BJM1MSM0PWFPE42Z1AA8/dashboard/share/US_ZF6RFZJ4SGBRUPV6BB47280WAFRPB1JZKMHSSHA7OD967T24UNC17DDY2XIW1OTN?type=summary&amp;agentView=true&amp;fqdn=summary-page">Violation</a> &nbsp; <a href="https://test-manager.lambdatest.com/projects/01M7J0MNACT6FJN3GTSE6TJ9H7/test-cases/01M7N2E2388KSXWP5NN25CR5DJ/dashboard/share/US_N5B7G7MY3YK4D6VNH5IVPQFHYK70FXQPBMPNK9KSKF0XWHHSLHZ4HGV8L9YU6O3P?type=summary&amp;agentView=true&amp;fqdn=summary-page">Decline</a> &nbsp; <a href="https://test-manager.lambdatest.com/projects/01M7J0MNACT6FJN3GTSE6TJ9H7/test-cases/01M7N2FWNXYM77486KWR4BTJ0D/dashboard/share/US_8M7V5571DBUVR8RU6DGHHYIQEE7SUZ7X4GDSL9TLG6DTZ314KQ94F8T818ERXHYD?type=summary&amp;agentView=true&amp;fqdn=summary-page">Accept</a></span></li>
         <li><span>The case file, rebuilt from the sealed packs</span><a href="cases/lumen-pr-2.html">Open the case file</a></li>
         <li><span>The counter-case: asked to "add Google Analytics", Claude Code added a consent banner itself, and Kane confirmed its claim</span><a href="https://github.com/miracle352/lumen/pull/1">miracle352/lumen#1</a></li>
-        <li class="cmd"><span>Re-judge all three runs yourself, with no account and no credits</span><code>npx github:miracle352/statute demo lumen-pr-2</code></li>
-        <li class="cmd"><span>Put the same loop on your repository</span><code>npx github:miracle352/statute init --fix</code></li>
+        <li class="cmdrow"><span>Re-judge all three runs yourself, with no account and no credits</span><div class="cmd"><code>npx github:miracle352/statute demo lumen-pr-2</code><button type="button" class="btn btn-ghost btn-sm copy" data-copy="npx github:miracle352/statute demo lumen-pr-2">Copy<span class="sr"> command</span></button></div></li>
+        <li class="cmdrow"><span>Put the same loop on your repository</span><div class="cmd"><code>npx github:miracle352/statute init --fix</code><button type="button" class="btn btn-ghost btn-sm copy" data-copy="npx github:miracle352/statute init --fix">Copy<span class="sr"> command</span></button></div></li>
       </ul>
     </section>
   </main>
@@ -538,6 +547,18 @@
   });
   $("play").addEventListener("click", () => { if (liveMode) { liveMode = false; if (es) es.close(); document.querySelector(".window").classList.remove("is-live"); } }, true);
   refreshLive();
+
+
+  // Scroll reveals for the sections under the player, and copy buttons.
+  const rvs = [".intro h1", ".intro p", ".livebar", ".check h2", ".check > div > p", ".proofs li", ".lp-foot"];
+  const rvio = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); rvio.unobserve(e.target); } }), { threshold: .12, rootMargin: "0px 0px -6% 0px" });
+  rvs.forEach((sel) => document.querySelectorAll(sel).forEach((el, i) => { el.classList.add("rv"); el.style.transitionDelay = (sel === ".proofs li" ? i * 70 : 0) + "ms"; reduce ? el.classList.add("in") : rvio.observe(el); }));
+  document.querySelectorAll(".intro .rv").forEach((el, i) => setTimeout(() => el.classList.add("in"), 80 + i * 120));
+  document.querySelectorAll(".copy[data-copy]").forEach((b) => b.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); } catch { return; }
+    const t = b.firstChild.textContent; b.firstChild.textContent = "Copied"; b.classList.add("done");
+    setTimeout(() => { b.firstChild.textContent = t; b.classList.remove("done"); }, 1600);
+  }));
 
   // Start when the stage is on screen, so nobody misses the beginning.
   let started = false;

@@ -75,6 +75,11 @@ const server = http.createServer(async (req, res) => {
 
   if (p === "/api/status" && req.method === "GET") return sendJson(res, 200, audit.status());
   if (p === "/api/audit" && req.method === "POST") return startAudit(req, res);
+  if (p === "/api/loop" && req.method === "GET") return sendJson(res, 200, audit.loopStatus());
+  if (p === "/api/loop" && req.method === "POST") {
+    try { return sendJson(res, 200, audit.createLoop({ ip: clientIp(req) })); }
+    catch (e) { return sendJson(res, e.code || 500, { error: e.message }); }
+  }
   let m = p.match(/^\/api\/audit\/([a-f0-9]{12})\/stream$/);
   if (m && req.method === "GET") {
     if (!audit.loadFinished(m[1]) || !audit.subscribe(m[1], res)) return sendJson(res, 404, { error: "No such audit." });

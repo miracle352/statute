@@ -8,7 +8,7 @@ RUN apt-get update \
  && apt-get update && apt-get install -y --no-install-recommends google-chrome-stable \
  && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @testmuai/kane-cli
+RUN npm install -g @testmuai/kane-cli @anthropic-ai/claude-code
 
 # The node image already has a non-root user "node" (uid 1000, home /home/node).
 WORKDIR /app

@@ -1,0 +1,7 @@
+{
+  "name": "lumen",
+  "private": true,
+  "description": "A small lighting shop.",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=20" }
+}

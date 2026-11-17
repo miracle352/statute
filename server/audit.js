@@ -30,7 +30,7 @@ try { state = { ...state, ...JSON.parse(fs.readFileSync(stateFile, "utf8")) }; }
 const save = () => fs.writeFileSync(stateFile, JSON.stringify(state));
 function today() {
   const d = new Date().toISOString().slice(0, 10);
-  if (state.day !== d) { state.day = d; state.used = 0; state.ips = {}; save(); }
+  if (state.day !== d) { state.day = d; state.used = 0; state.ips = {}; state.loops = 0; state.loopIps = {}; save(); }
   return d;
 }
 
@@ -114,7 +114,7 @@ async function pump() {
   if (running || !queue.length) return;
   running = queue.shift();
   queue.forEach((j, i) => emit(j, "queued", { position: i + 2 }));
-  try { await runJob(running); } catch (e) {
+  try { await (running.kind === "loop" ? require("./loop").runLoop(running) : runJob(running)); } catch (e) {
     running.status = "error";
     emit(running, "error", { message: e.message || String(e) });
   } finally {
@@ -125,14 +125,10 @@ async function pump() {
   }
 }
 
-async function runJob(job) {
-  job.status = "running";
-  const dir = path.join(DATA, "audits", job.id);
+// One Kane run that we watch live: frames and requests stream to the job, then
+// code judges Kane's sealed evidence. Used by audits and by the live loop.
+async function observe(job, { url, objective, pack, dir, strict = false, phase }) {
   fs.mkdirSync(path.join(dir, "evidence"), { recursive: true });
-  emit(job, "started", { url: job.label, pack: job.pack });
-
-  // With a country set (and TestMu credentials), Kane drives a TestMu AI cloud
-  // browser located in that country, so the site sees a local visitor.
   const cloud = job.country && process.env.LT_USERNAME && process.env.LT_ACCESS_KEY;
   if (job.country && !cloud) throw new Error("Auditing from another country needs LT_USERNAME and LT_ACCESS_KEY set in the environment.");
   const browser = cloud ? null : await chrome.launch();
@@ -145,7 +141,7 @@ async function runJob(job) {
       try { u = new URL(r.url); } catch { return; }
       if (/favicon\.ico$/.test(u.pathname)) return;
       const tracker = consent.matchDomain(u);
-      const item = { method: r.method, url: (u.host + u.pathname).slice(0, 120), tracker: tracker || null, after: rejectAt != null && r.time >= rejectAt, t: r.time };
+      const item = { method: r.method, url: (u.host + u.pathname).slice(0, 120), tracker: tracker || null, after: rejectAt != null && r.time >= rejectAt, t: r.time, phase };
       seen.push(item);
       emit(job, "request", item);
     },
@@ -153,7 +149,7 @@ async function runJob(job) {
 
   let res;
   try {
-    res = await kane.run(liveObjective(job.pack, job.target.url), {
+    res = await kane.run(objective, {
       maxSteps: Number(process.env.MAX_STEPS || 16),
       timeout: Number(process.env.RUN_TIMEOUT || 210),
       cdpEndpoint: cloud ? undefined : browser.endpoint,
@@ -165,9 +161,9 @@ async function runJob(job) {
           const remark = String(e.remark || "");
           if (rejectAt == null && e.status === "done" && /^click\b/i.test(remark) && /(reject|decline|refuse|deny|necessary only|essential only)/i.test(remark)) {
             rejectAt = Date.now() - 1500;
-            emit(job, "reject", { at: rejectAt, label: consent.cleanLabel(remark) });
+            emit(job, "reject", { at: rejectAt, label: consent.cleanLabel(remark), phase });
           }
-          emit(job, "step", { n: e.step, status: e.status, remark: remark.replace(/^(\w+):\s*/, (m, k) => `${k}: `) });
+          emit(job, "step", { n: e.step, status: e.status, remark: remark.replace(/^(\w+):\s*/, (m, k) => `${k}: `), phase });
         }
       },
     });
@@ -188,7 +184,7 @@ async function runJob(job) {
   // only if the pack has no network recording.
   let packPath = res.end.session_dir ? evidence.newestPack(res.end.session_dir) : null;
   if (packPath) {
-    const copy = path.join(dir, "evidence", `${job.pack}-${Date.now()}.evidence`);
+    const copy = path.join(dir, "evidence", `${pack}-${Date.now()}.evidence`);
     fs.copyFileSync(packPath, copy);
     packPath = copy;
   }
@@ -199,16 +195,25 @@ async function runJob(job) {
     network = { ...network, harFiles: 1, requests: seen.map((s) => ({ url: `https://${s.url}`, method: s.method, time: new Date(s.t).toISOString(), setCookies: [], sentCookies: [] })) };
   }
   if (rejectAt) network.liveRejectAt = rejectAt;
-  const pk = PACKS[job.pack];
-  job.kaneEnd = res.end;
-  const result = pk.judge({ end: res.end, events: res.events, network });
-  fs.writeFileSync(path.join(dir, `${job.pack}.last-run.json`), JSON.stringify({ end: res.end, events: res.events, packPath }, null, 2));
+  const pk = PACKS[pack];
+  const result = pk.judge({ end: res.end, events: res.events, network, strict });
+  fs.writeFileSync(path.join(dir, `${pack}.last-run.json`), JSON.stringify({ end: res.end, events: res.events, packPath }, null, 2));
   report.write(dir, pk, result, { evidence: packPath && path.basename(packPath), testUrl: res.end.test_url || network.shareLink, credits: res.end.credits_consumed, kaneStatus: res.end.status, kaneSummary: res.end.summary });
+  return { result, packPath, end: res.end, run: res.end.test_url || network.shareLink || null, credits: Number(res.end.credits_consumed) || 0, source };
+}
+
+async function runJob(job) {
+  job.status = "running";
+  const dir = path.join(DATA, "audits", job.id);
+  emit(job, "started", { url: job.label, pack: job.pack });
+  const o = await observe(job, { url: job.target.url, objective: liveObjective(job.pack, job.target.url), pack: job.pack, dir });
+  const result = o.result;
+  job.kaneEnd = o.end;
   page.build({ out: dir, packs: PACKS, url: job.label });
   job.result = result;
   job.caseUrl = `/audits/${job.id}/`;
   job.status = "done";
-  emit(job, "verdict", { verdict: result.verdict, why: result.why, result, caseUrl: job.caseUrl, run: res.end.test_url || network.shareLink || null, credits: res.end.credits_consumed, source });
+  emit(job, "verdict", { verdict: result.verdict, why: result.why, result, caseUrl: job.caseUrl, run: o.run, credits: o.end.credits_consumed, source: o.source });
   fs.writeFileSync(path.join(dir, "result.json"), JSON.stringify({ url: job.label, pack: job.pack, result, caseUrl: job.caseUrl, events: job.events, lastFrame: job.lastFrame }));
   state.cache[job.key] = { id: job.id, at: Date.now() };
   save();
@@ -224,4 +229,32 @@ async function runDirect({ url, label, pack = "consent", country, onEvent }) {
   return job;
 }
 
-module.exports = { create, subscribe, status, loadFinished, runDirect, jobs, DATA, PACKS };
+// Queue a live loop (Kane finds it, Claude Code fixes it, Kane proves it).
+function createLoop({ ip }) {
+  today();
+  const cap = Number(process.env.LOOP_DAILY_CAP || 6);
+  state.loops = state.loops || 0;
+  state.loopIps = state.loopIps || {};
+  if (!process.env.CLAUDE_CODE_OAUTH_TOKEN && !process.env.ANTHROPIC_API_KEY) throw Object.assign(new Error("Live loops are switched off on this server (no Claude Code token). Watch the recorded run above."), { code: 503 });
+  if (state.loops >= cap) throw Object.assign(new Error(`Today's ${cap} live loops are used up. Watch the recorded run above, or the last live one; the counter resets at midnight UTC.`), { code: 429 });
+  if ((state.loopIps[ip] || 0) >= 1) throw Object.assign(new Error("You've run a live loop today. Thanks for watching; try again tomorrow."), { code: 429 });
+  state.loops++;
+  state.loopIps[ip] = (state.loopIps[ip] || 0) + 1;
+  save();
+  const id = crypto.randomBytes(6).toString("hex");
+  const job = { id, kind: "loop", pack: "consent", target: { label: "Lumen with Google's tag pasted in", internal: true }, label: "live loop", status: "queued", events: [], listeners: new Set(), createdAt: Date.now() };
+  jobs.set(id, job);
+  queue.push(job);
+  emit(job, "queued", { position: queue.length + (running ? 1 : 0) });
+  pump();
+  return { id };
+}
+
+function loopStatus() {
+  today();
+  const cap = Number(process.env.LOOP_DAILY_CAP || 6);
+  return { enabled: !!(process.env.CLAUDE_CODE_OAUTH_TOKEN || process.env.ANTHROPIC_API_KEY), cap, left: Math.max(0, cap - (state.loops || 0)), busy: !!running || queue.length > 0, last: state.lastLoop || null };
+}
+function rememberLoop(id) { state.lastLoop = id; save(); }
+
+module.exports = { create, createLoop, loopStatus, rememberLoop, observe, emit, subscribe, status, loadFinished, runDirect, jobs, DATA, PACKS };

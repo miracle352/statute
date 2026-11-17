@@ -113,6 +113,18 @@
   .controls button:hover { color: var(--text); border-color: rgba(255,255,255,.28); }
   .controls button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
 
+  .livebar { margin-top: 28px; padding: clamp(20px, 3vw, 32px); border: 1px solid rgba(95,227,167,.35); border-radius: 18px; background: radial-gradient(120% 140% at 0% 0%, rgba(95,227,167,.10), transparent 60%), var(--panel); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 32px; align-items: center; }
+  .livebar h2 { font: 400 clamp(26px, 3vw, 38px)/1.1 var(--serif); }
+  .livebar p { color: var(--soft); margin-top: 8px; max-width: 70ch; }
+  .livebtns { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+  .livebtns a { color: var(--soft); font-size: 14px; }
+  .livemsg { grid-column: 1 / -1; color: var(--soft); font-size: 14px; margin: 0; }
+  .livemsg:empty { display: none; }
+  .livemsg.err { color: #ffb4af; }
+  .window.is-live { border-color: rgba(95,227,167,.45); }
+  .live-tag { display: inline-flex; align-items: center; gap: 6px; font: 600 11px/1 var(--sans); letter-spacing: .04em; color: #04140c; background: var(--mint); padding: 5px 8px; border-radius: 999px; }
+  #live img { object-fit: contain; background: #fff; }
+  @media (max-width: 760px) { .livebar { grid-template-columns: 1fr; } .livebtns { align-items: flex-start; } }
   .check { margin-top: clamp(64px, 9vw, 120px); padding-top: 32px; border-top: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(24px, 4vw, 64px); }
   .check h2 { font: 400 clamp(30px, 3.6vw, 48px)/1.05 var(--serif); }
   .check > div > p { color: var(--soft); margin-top: 14px; }
@@ -178,6 +190,7 @@
             <div class="layer" id="shot-accept"><img src="assets/loop/accept.jpg" alt="Kane's screenshot of the same banner, before it clicks Accept." width="1600" height="900" loading="lazy"></div>
             <div class="layer editor" id="fix" aria-label="Claude Code's fix"></div>
             <div class="layer pr" id="pr" aria-label="The pull request after the run"></div>
+            <div class="layer" id="live"><img id="liveimg" alt="Live view of Kane's browser on our server" width="1280" height="720"></div>
             <div class="pills" id="pills" aria-hidden="true"></div>
             <svg class="cursor" id="cursor" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2l16 9.5-7 1.6-3.6 6.4z" fill="#fff" stroke="#000" stroke-width="1.4" stroke-linejoin="round"/></svg>
             <span class="ripple" id="ripple" aria-hidden="true"></span>
@@ -200,6 +213,15 @@
           <button type="button" id="restart">Replay</button>
         </div>
       </div>
+    </section>
+
+    <section class="livebar" id="livebar" hidden>
+      <div>
+        <h2>Now run it yourself, live.</h2>
+        <p>Our server copies the shop with Google's tag pasted in. Kane CLI catches it in a real Chrome, Claude Code fixes the code, and Kane proves the fix after Decline and after Accept. Nothing is recorded: you watch it happen. About six minutes. <span id="liveleft"></span></p>
+      </div>
+      <div class="livebtns"><button class="btn btn-white" type="button" id="golive">Run it live</button><a id="lastlive" hidden>See the last live run</a></div>
+      <p class="livemsg" id="livemsg" role="status" aria-live="polite"></p>
     </section>
 
     <section class="check">
@@ -317,7 +339,7 @@
       ] },
   ];
 
-  const layers = ["diff", "shot-before", "shot-decline", "shot-accept", "fix", "pr"];
+  const layers = ["diff", "shot-before", "shot-decline", "shot-accept", "fix", "pr", "live"];
   function view(id, addr, who, kind) {
     layers.forEach((l) => $(l).classList.toggle("on", l === id));
     $("shot-before").classList.remove("dim");
@@ -402,6 +424,119 @@
   }
   $("play").addEventListener("click", () => setPlaying(!playing));
   $("restart").addEventListener("click", () => { playing = true; $("play").textContent = "Pause"; $("play").setAttribute("aria-pressed", "true"); run(0, true); });
+
+
+  // ---- live mode: the same stage, driven by a real run on our server ----
+  const liveImg = $("liveimg");
+  let es = null, liveMode = false;
+  const now = () => new Date().toISOString().slice(11, 19);
+  const PHASE_TAB = { change: 0, kane: 1, claude: 3, prove: 4 };
+  function liveTab(k, mark) {
+    tabs.forEach((t, i) => {
+      if (i === k) t.setAttribute("aria-current", "step"); else t.removeAttribute("aria-current");
+      t.classList.toggle("done", i < k);
+      t.querySelector("i").style.width = i <= k ? "100%" : "0";
+    });
+  }
+  function liveCaption(title, note) { $("caption").innerHTML = `${title}<small>${note || ""}</small>`; }
+  function liveView(id, addr, who, kind) {
+    view(id, addr, who, kind);
+    $("who").innerHTML = (kind === "live" ? '<span class="live-tag">LIVE</span> ' : "") + esc(who);
+  }
+  function enterLive() {
+    clearTimers(); playing = false; liveMode = true;
+    $("play").textContent = "Replay the recording"; $("play").setAttribute("aria-pressed", "false");
+    $("feed").innerHTML = ""; unstamp();
+    document.querySelector(".window").classList.add("is-live");
+    liveTab(0);
+    addChapter("Live run");
+    liveCaption("Starting a live run on our server.", "Kane, Claude Code and the shop are all running right now, not recorded.");
+    $("screen").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+  }
+  function startLive(id) {
+    enterLive();
+    es = new EventSource(`/api/audit/${id}/stream`);
+    let trackers = 0;
+    es.addEventListener("queued", (e) => { const d = JSON.parse(e.data); if (d.position > 1) liveCaption(`Waiting for the server: ${d.position - 1} run ahead of yours.`, "One browser at a time, so each run is clean."); });
+    es.addEventListener("phase", (e) => {
+      const d = JSON.parse(e.data);
+      liveTab(PHASE_TAB[d.phase] ?? 0);
+      addChapter({ change: "The change", kane: "Kane visits", claude: "Claude fixes", prove: "Kane proves" }[d.phase] || d.phase);
+      addEvent(now(), d.text, "");
+      if (d.phase === "change") { liveView("diff", "statute-production.up.railway.app  examples/lumen-tag/server.js", "The broken shop", "gh"); typeLines("diff"); liveCaption("A fresh copy of the shop with Google's tag pasted in.", d.text); }
+      if (d.phase === "kane" || d.phase === "prove") { unstamp(); trackers = 0; liveView("live", "Lumen shop on our server", "Kane CLI, real Chrome", "live"); liveCaption(d.phase === "kane" ? "Kane is using the shop right now." : "Kane is checking Claude's fix right now.", d.text); }
+      if (d.phase === "claude") { unstamp(); $("fix").innerHTML = '<span class="ln file in">Claude Code is working on server.js ...</span>'; liveView("fix", "examples/lumen-tag  server.js", "Claude Code", "claude"); liveCaption("Claude Code is fixing the code right now.", d.text); }
+    });
+    es.addEventListener("frame", (e) => { const d = JSON.parse(e.data); liveImg.src = "data:image/jpeg;base64," + d.data; });
+    es.addEventListener("step", (e) => { const d = JSON.parse(e.data); if (d.status === "done" && d.remark) addEvent(now(), '<span class="who">Kane</span> ' + esc(d.remark.replace(/^\w+:\s*/, "")), ""); });
+    es.addEventListener("reject", (e) => { const d = JSON.parse(e.data); addEvent(now(), '<span class="who">Kane</span> clicked <b>' + esc(d.label || "Reject") + "</b>", ""); });
+    es.addEventListener("request", (e) => {
+      const d = JSON.parse(e.data);
+      if (!d.tracker) return;
+      trackers++;
+      const ok = d.phase === "prove" && /accept/i.test(document.getElementById("caption").textContent);
+      addEvent(now(), `<b>${esc(d.method)}</b> <code>${esc(d.url)}</code>`, ok ? "ok" : "bad");
+      if (trackers <= 4) pill(d.url.split("/")[0] + (ok ? " after Accept" : ""), ok);
+    });
+    es.addEventListener("judged", (e) => {
+      const d = JSON.parse(e.data);
+      const bad = d.verdict === "violation";
+      addEvent(now(), `<b>${d.verdict.toUpperCase()}</b>${d.pack === "consent-accept" ? " (Accept)" : ""}. ${esc(d.why)}${d.run ? ` <a href="${d.run}" target="_blank" rel="noopener">Kane run</a>` : ""}`, bad ? "bad" : d.verdict === "pass" ? "ok" : "");
+      if (bad) { liveTab(2); stamp("Violation", "bad"); liveCaption("Violation, decided by code, not a model.", d.why); }
+      else if (d.verdict === "pass") { stamp("Pass", "good"); liveCaption(d.pack === "consent-accept" ? "Accept still works. The fix is proven." : "Decline is clean.", d.why); }
+    });
+    es.addEventListener("claude", (e) => {
+      const d = JSON.parse(e.data);
+      const ln = document.createElement("span"); ln.className = "ln in"; ln.textContent = d.line;
+      $("fix").appendChild(ln);
+      const all = $("fix").querySelectorAll(".ln"); if (all.length > 14) all[1].remove();
+    });
+    es.addEventListener("fixed", (e) => {
+      const d = JSON.parse(e.data);
+      const rows = [];
+      (d.files || []).forEach((f) => {
+        rows.push(["file", `${f.file}   changed by Claude Code in ${d.seconds}s`]);
+        f.lines.forEach(([k, t]) => rows.push([k === "+" ? "add" : k === "-" ? "del" : k === "@" ? "file" : "", (k === "@" ? "  ..." : k + t)]));
+      });
+      fill($("fix"), rows.length ? rows.slice(0, 22) : [["file", "Claude Code made no change"]]);
+      typeLines("fix");
+      addEvent(now(), `<span class="who">Claude Code</span> (${d.seconds}s): \u201c${esc(d.summary.replace(/\s+/g, " ").slice(0, 300))}\u201d`, "");
+    });
+    es.addEventListener("done", (e) => {
+      const d = JSON.parse(e.data);
+      liveTab(5);
+      addChapter("Done");
+      addEvent(now(), `${d.fixed ? "<b>Fixed and proven, live.</b> " : ""}${esc(d.note)} Credits used: ${d.credits}. <a href="${d.caseUrl}">Case file</a>`, d.fixed ? "ok" : "bad");
+      liveCaption(d.fixed ? "Fixed and proven, live, while you watched." : "The loop stopped.", `${esc(d.note)} <a href="${d.caseUrl}">Open the case file</a> for every request and screenshot.`);
+      if (d.fixed) stamp("Proven", "good");
+      es.close(); refreshLive();
+    });
+    es.addEventListener("error", (e) => {
+      if (e.data) { const d = JSON.parse(e.data); addEvent(now(), esc(d.message), "bad"); liveCaption("The live run stopped.", esc(d.message)); es.close(); refreshLive(); }
+    });
+  }
+  async function refreshLive() {
+    try {
+      const st = await (await fetch("/api/loop", { cache: "no-store" })).json();
+      if (!st.enabled) return;
+      $("livebar").hidden = false;
+      $("liveleft").textContent = st.left ? `${st.left} of ${st.cap} live runs left today.` : "Today's live runs are used up.";
+      $("golive").disabled = !st.left;
+      if (st.last) { const a = $("lastlive"); a.hidden = false; a.href = `/audits/${st.last}/`; }
+    } catch {}
+  }
+  $("golive").addEventListener("click", async () => {
+    const msg = $("livemsg"); msg.className = "livemsg"; msg.textContent = "Starting...";
+    try {
+      const r = await fetch("/api/loop", { method: "POST" });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Could not start.");
+      msg.textContent = "Running live in the window above.";
+      startLive(d.id);
+    } catch (err) { msg.className = "livemsg err"; msg.textContent = err.message; }
+  });
+  $("play").addEventListener("click", () => { if (liveMode) { liveMode = false; if (es) es.close(); document.querySelector(".window").classList.remove("is-live"); } }, true);
+  refreshLive();
 
   // Start when the stage is on screen, so nobody misses the beginning.
   let started = false;

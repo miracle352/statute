@@ -2,7 +2,7 @@
 // Writes the pull request workflow, the nightly watch, and statute.json for the
 // Claude Code hook, then says which two secrets to add.
 //
-//   npx statute init --start "npm start" --url http://localhost:3000 [--live https://your-site.com] [--fix]
+//   npx github:miracle352/statute init --start "npm start" --url http://localhost:3000 [--live https://your-site.com] [--fix]
 const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
@@ -134,8 +134,8 @@ Next:
   3. Optional: run again with --live https://your-site.com to watch production every night.`}
 
   To have Claude Code check its own work before it says "done", add this to .claude/settings.json:
-    { "hooks": { "Stop": [ { "hooks": [ { "type": "command", "timeout": 600, "command": "npx -y statute hook" } ] } ] } }
+    { "hooks": { "Stop": [ { "hooks": [ { "type": "command", "timeout": 600, "command": "npx -y github:miracle352/statute hook" } ] } ] } }
 
-  Try a check right now: npx statute check consent --url ${url} --start ${q(start)}
+  Try a check right now: npx github:miracle352/statute check consent --url ${url} --start ${q(start)}
 `);
 };

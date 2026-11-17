@@ -172,7 +172,7 @@ function replay(only) {
   if (!names.length) { console.error("No recorded runs found in replays/."); process.exit(1); }
   for (const name of names) {
     const src = path.join(base, name);
-    const out = path.join(process.cwd(), "statute-report", "replay", name);
+    const out = path.join(writableBase(), "statute-report", "replay", name);
     fs.mkdirSync(out, { recursive: true });
     fs.copyFileSync(path.join(src, "loop.json"), path.join(out, "loop.json"));
     fs.cpSync(path.join(src, "evidence"), path.join(out, "evidence"), { recursive: true });
@@ -208,18 +208,29 @@ function resetDemo() {
   console.log("Demo store reset: its compliance bugs are back.");
 }
 
-const HELP = `Statute: Kane CLI checks your app against consumer law in a real browser. Code, not a model, decides the verdict.
+// The current folder, unless the user can't write there (for example a shell opened in C:\Windows\System32).
+let _base;
+function writableBase() {
+  if (_base) return _base;
+  const os = require("os");
+  for (const dir of [process.cwd(), os.homedir(), os.tmpdir()]) {
+    try { fs.mkdirSync(path.join(dir, "statute-report"), { recursive: true }); fs.accessSync(path.join(dir, "statute-report"), fs.constants.W_OK); return (_base = dir); } catch {}
+  }
+  return (_base = os.tmpdir());
+}
 
-  npx statute demo                                   see it work: re-judge recorded Kane runs, no account, no credits
-  npx statute check consent --url <url>              Kane visits, clicks Reject, and Statute reports what still tracked
-  npx statute check price   --url <url>              is the price shown the price paid at checkout?
-  npx statute check cancel  --url <url>              can a subscription be cancelled as easily as it was started?
-  npx statute fix consent --url <url> --start "<cmd>" --app <dir>
-                                                     Kane finds it, Claude Code fixes it, Kane proves it
-  npx statute init [--live https://your-site.com] [--fix]
-                                                     add the GitHub workflows: every PR, and production every night
-  npx statute hook                                   Claude Code Stop hook: no "done" until Kane passes
-  npx statute mcp                                    MCP server: gives any agent a statute_check tool
+const HELP = `Statute: Kane CLI checks your app against consumer law in a real browser.
+Code, not a model, decides the verdict. Run any command with npx github:miracle352/statute <command>
+
+  demo                            see it work: re-judge recorded Kane runs (no account, no credits)
+  check consent --url <url>       Kane clicks Reject on the cookie banner; Statute reports what still tracked
+  check price   --url <url>       is the price shown the price paid at checkout?
+  check cancel  --url <url>       is cancelling as easy as subscribing?
+  fix <check> --url <url> --start "<cmd>" --app <dir>
+                                  Kane finds it, Claude Code fixes it, Kane proves the fix
+  init [--fix] [--live <url>]     add the GitHub workflows: every pull request, and production every night
+  hook                            Claude Code Stop hook: no "done" until Kane passes
+  mcp                             MCP server: gives any agent a statute_check tool
 
 Checks need Kane CLI: npm install -g @testmuai/kane-cli, then kane-cli login
 (or set LT_USERNAME and LT_ACCESS_KEY). Docs: https://github.com/miracle352/statute`;
@@ -265,7 +276,7 @@ async function main() {
   }
   if (!opts.url || opts.url === true) { console.error("--url is required\n\n" + usage); process.exit(2); }
   if (!kane.available()) {
-    console.error("Statute needs Kane CLI to visit the site.\n  npm install -g @testmuai/kane-cli\n  kane-cli login        (or set LT_USERNAME and LT_ACCESS_KEY)\n\nNo account yet? Free credits: https://www.testmuai.com/kane-cli/\nTo see Statute work without Kane: npx statute demo");
+    console.error("Statute needs Kane CLI to visit the site.\n  npm install -g @testmuai/kane-cli\n  kane-cli login        (or set LT_USERNAME and LT_ACCESS_KEY)\n\nNo account yet? Free credits: https://www.testmuai.com/kane-cli/\nTo see Statute work without Kane: npx github:miracle352/statute demo");
     process.exit(3);
   }
   if (cmd === "check") {

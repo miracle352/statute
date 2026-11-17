@@ -1,8 +1,10 @@
 # Statute
 
-**Your Reject button might be lying. Statute sends Kane CLI to find out.**
+**Your agent's code works. Is it legal?**
 
-Paste a website. Kane CLI opens it in a real Chrome, clicks Reject on the cookie banner, keeps browsing and records every request. Code, not a model, reads Kane's sealed evidence pack and decides whether trackers still fired. On your own app, the report goes to your coding agent, and Kane comes back to prove the fix. A fix only counts when Kane says so.
+Ask a coding agent to "add analytics" and it can add Google Analytics with no consent check. Ask it for a checkout and a "service fee" can appear at the last step. The site works, every functional test passes, and it breaks consumer law. Statute is the check your agent can't skip: Kane CLI opens your app in a real Chrome, clicks Reject, reads the checkout, tries to cancel, and records everything. Code, not a model, judges Kane's sealed evidence against the law. On a violation the report goes back to your agent, and Kane returns to prove the fix. A fix only counts when Kane says so.
+
+There are no tests to write. The laws are the tests: consent (GDPR and ePrivacy), drip pricing (California SB 478, UK DMCC Act, EU Consumer Rights Directive) and click-to-cancel. It runs on every pull request that could break one, and on your live site every night. The same checks found 7 of 15 big European sites still tracking after Reject.
 
 Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19 November 2026).
 
@@ -17,10 +19,11 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | 1 min | Kane inside Claude Code: the agent's "done" blocked until the law holds, in a real session | [Screenshots](#put-kane-inside-your-agent) |
 | 1 min | The GitHub Action commenting a violation on a real pull request, and skipping the PRs that can't break a law | [The PR](https://github.com/miracle352/statute/pulls?q=is%3Apr+%22Test+the+Statute+action%22) · [how](#on-pull-requests-only-when-it-matters) |
 | 1 min | The nightly watch: Kane checks the live site, opens an issue on a violation, closes it once fixed | [Watch issue](https://github.com/miracle352/statute/issues?q=label%3Astatute) · [how](#on-the-live-site-every-night) |
-| 2 min | Run it yourself with no Kane credits and no login | `git clone https://github.com/miracle352/statute && cd statute && npm run demo` |
+| 1 min | Run it yourself with no Kane credits and no login | `npx github:miracle352/statute demo` |
+| 2 min | Add it to your repo: every pull request, plus production every night | `npx github:miracle352/statute init --fix --live https://your-site.com` |
 | 10 min | Run the whole loop on your machine (Kane CLI and Claude Code needed, about 31 credits) | `npm run demo:fix` |
 
-`npm run demo` needs only Node 22. It re-judges four recorded loops (the demo shop's Reject, price and cancel checks, and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
+`demo` needs only Node 22. It re-judges four recorded loops (the demo shop's Reject, price and cancel checks, and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
 
 ## The checks
 
@@ -44,7 +47,7 @@ Statute can sit inside the coding agent itself, so the agent hears from Kane wit
 
 **As an MCP server.** Any agent that speaks MCP gets two tools: `statute_check` (Kane checks a page against a rule; the verdict and evidence come back into the conversation) and `statute_rules` (the rules and the laws behind them).
 
-    claude mcp add statute -- npx -y statute mcp
+    claude mcp add statute -- npx -y github:miracle352/statute mcp
 
 Then ask the agent to "check consent on http://localhost:3000 with statute", or let it decide to after it touches a cookie banner, a price or a subscription flow.
 
@@ -56,7 +59,7 @@ Then ask the agent to "check consent on http://localhost:3000 with statute", or 
 
 ```json
 { "hooks": { "Stop": [ { "hooks": [ { "type": "command", "timeout": 900,
-  "command": "npx -y statute hook" } ] } ] } }
+  "command": "npx -y github:miracle352/statute hook" } ] } ] } }
 ```
 
 `check` can be a list, for example `["consent", "price"]`. Projects without a `statute.json` are left alone.

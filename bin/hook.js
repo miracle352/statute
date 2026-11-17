@@ -5,7 +5,7 @@
 //
 // .claude/settings.json in your project:
 //   { "hooks": { "Stop": [ { "hooks": [ { "type": "command", "timeout": 600,
-//       "command": "npx -y statute hook" } ] } ] } }
+//       "command": "npx -y github:miracle352/statute hook" } ] } ] } }
 //
 // statute.json in your project says what to check:
 //   { "check": "consent", "url": "http://localhost:3000/", "start": "npm run dev", "rounds": 3 }

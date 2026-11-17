@@ -22,10 +22,23 @@ It also ships inside Kane's own formats: the three laws as Kane CLI test files y
 
 Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19 November 2026).
 
+## For judges: one minute per score
+
+| Criterion | The proof |
+|---|---|
+| **Bar 1: works end to end** | Click **Run it live** on the [loop page](https://statute-production.up.railway.app/loop.html): our server copies a shop with Google's tag pasted in, Kane catches it, real Claude Code fixes it, Kane proves the fix, while you watch (about 5 minutes). Or, with no account and no credits: `npx github:miracle352/statute demo` |
+| **Bar 2: Kane caught or proved something** | On strangers' live sites: [7 of 15 big European sites](https://statute-production.up.railway.app/#census) kept tracking after Reject; [cruisinginthewake.com](https://statute-production.up.railway.app/cases/in-the-wake.html) tracks before any choice; [HAXCMS](https://statute-production.up.railway.app/cases/haxcms.html) loaded Analytics with no way to refuse |
+| **Bar 3: agent and Kane talk to each other** | [miracle352/lumen#2](https://github.com/miracle352/lumen/pull/2): Kane's report went to Claude Code, which fixed the code and said "I haven't re-run Kane"; Kane then proved Decline and Accept, and Statute pushed the fix to the pull request |
+| **Ships** | A [live site](https://statute-production.up.railway.app) that audits your URL, a [GitHub Action](#use-it-in-ci) with `npx github:miracle352/statute init`, a nightly production watch, a Claude Code hook and [agent skill](skill/statute/SKILL.md), an MCP server, and the laws as [Kane CLI test files](laws/) |
+| **Verified** | Verdicts are code over Kane's sealed evidence, never a model's opinion. 44 tests, including a golden test that re-judges 14 real recorded Kane runs on every commit. A check that can't prove anything says so ("not judged") instead of passing |
+| **Closed loop** | Three places: in CI (the Action fixes and pushes only what Kane passed), in Claude Code (its Stop hook won't let the agent finish until Kane passes), and live on the [loop page](https://statute-production.up.railway.app/loop.html) |
+| **Craft** | No tests to write: the laws are the tests. One command to add it to a repo. A pull request that touches only styles or docs costs 0 credits. Kane's screenshots right in the PR comment |
+
 ## Start here
 
 | Time | What | Where |
 |---|---|---|
+| 5 min | **Run the loop live.** Kane catches a pasted Google tag, real Claude Code fixes it, Kane proves the fix, on our server while you watch | [Loop page](https://statute-production.up.railway.app/loop.html) → **Run it live** |
 | 2 min | **The whole loop on a real repo, no human touching code.** A developer pastes Google's tag the way Google's setup page says. Statute reads the diff, Kane finds tracking with no way to refuse, Claude Code adds consent, Kane proves Reject and Accept, and Statute pushes the proven fix to the pull request | [miracle352/lumen#2](https://github.com/miracle352/lumen/pull/2) |
 | 1 min | **The agent's claim, verified.** Asked only to "add Google Analytics", Claude Code added a consent banner and said cookies are set only after Accept. Kane checked: true, with screenshots | [miracle352/lumen#1](https://github.com/miracle352/lumen/pull/1) |
 | 1 min | Watch Kane audit our demo shop live, in a real browser on our server | [statute-production.up.railway.app](https://statute-production.up.railway.app) → "Watch Kane audit our demo shop" |

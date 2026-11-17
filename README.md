@@ -8,6 +8,18 @@ Ask Claude Code to "add Google Analytics" and it will usually add a cookie banne
 
 There are no tests to write. The laws are the tests: consent (GDPR and ePrivacy), drip pricing (California SB 478, UK DMCC Act, EU Consumer Rights Directive) and click-to-cancel. It runs on every pull request that could break one, and on your live site every night. The same checks found 7 of 15 big European sites still tracking after Reject.
 
+**Watch the whole loop on a real pull request:** [statute-production.up.railway.app/loop.html](https://statute-production.up.railway.app/loop.html)
+
+### What Kane CLI does here
+
+Kane isn't a test runner bolted on at the end. Statute uses it three ways:
+
+- **As the runtime.** Kane does the work Statute exists for: it uses the app like a visitor, and its sealed evidence pack (network log, action log, screenshots) is the only input to every verdict. For other people's sites it runs in TestMu's cloud browsers in the site's own country, so the census saw the cookie banners an EU visitor sees.
+- **As the build loop.** When an agent fixes a violation, the fix only counts once Kane passes it, in Claude Code (a Stop hook or the agent skill) or in CI.
+- **As the safety net.** On every pull request that touches tracking, prices or subscriptions, and on the live site every night.
+
+It also ships inside Kane's own formats: the three laws as Kane CLI test files you can run with `kane-cli testmd run`, and an agent skill alongside Kane's own. See [Use it with Kane CLI directly](#use-it-with-kane-cli-directly).
+
 Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19 November 2026).
 
 ## Start here
@@ -27,7 +39,7 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | 2 min | Add it to your repo: every pull request, plus production every night | `npx github:miracle352/statute init --fix --live https://your-site.com` |
 | 10 min | Run the whole loop on your machine (Kane CLI and Claude Code needed, about 31 credits) | `npm run demo:fix` |
 
-`demo` needs only Node 22. It re-judges four recorded loops (the demo shop's Reject, price and cancel checks, and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
+`demo` needs only Node 22. It re-judges five recorded loops (Lumen PR #2 from GitHub Actions, the demo shop's Reject, price and cancel checks, and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
 
 ## The checks
 
@@ -44,6 +56,22 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 2. **Code judges.** `src/packs/consent.js` reads the pack. It finds the moment of the Reject click in Kane's action log, splits every request into before and after that moment, and matches hosts against a tracker list (`rules/trackers.json`). It pulls Google Analytics client IDs out of `/g/collect` hits, so "the same visitor ID went out after Reject" is a fact from the traffic, not a guess. Two things are shown but not counted: Google Consent Mode hits that say consent was denied, and Google Tag Manager's own code loading with no measurement hit.
 3. **Your agent fixes.** `statute fix` hands the report, the rule and the law to Claude Code (`claude -p`, edit tools only, working in your app's folder). It restarts your app and sends Kane back.
 4. **Kane proves.** The loop stops when Reject passes *and* Accept still loads the tags, or after three rounds. The case file shows every round with Kane's screenshots and share links.
+
+## Use it with Kane CLI directly
+
+Already use Kane? The laws are plain Kane CLI test files in [`laws/`](laws/). Kane runs them and seals the evidence; Statute's code judges the pack against the law. Kane's own pass only says the steps ran; the legal verdict comes from the evidence.
+
+```bash
+kane-cli testmd run laws/reject_means_reject_test.md --variables '{"url":"https://your-site.com"}'
+npx github:miracle352/statute judge consent --latest
+```
+
+There's one file per law (`reject_means_reject`, `accept_still_works`, `price_shown_is_price_paid`, `cancel_as_easy_as_signup`), each judged with `judge consent`, `consent-accept`, `price` or `cancel`. `--latest` reads the newest sealed pack in `.testmuai/evidence/` or your Kane sessions folder.
+
+**The agent skill.** Kane ships a skill so coding agents verify their own work (`npx @testmuai/kane-cli-skill`). Statute's skill sits next to it: after a change to tracking, prices or subscriptions, the agent runs the matching law check, fixes what fails, and isn't done until Kane passes.
+
+    npx github:miracle352/statute skill            # for every project
+    npx github:miracle352/statute skill --project  # just this repository (.claude/skills/statute)
 
 ## Put Kane inside your agent
 
@@ -177,8 +205,8 @@ Guard rails: public `http`/`https` sites only (private, internal and metadata ad
 Node 22, [Kane CLI](https://www.npmjs.com/package/@testmuai/kane-cli) (`npm i -g @testmuai/kane-cli && kane-cli login`), and Claude Code for the fix loop. No npm install: Statute has no dependencies.
 
     npm run demo              replay recorded runs, no credits
-    npm test                  40 tests: every judge, the diff check, and a golden test that
-                              re-judges the 10 recorded Kane runs and fails if a verdict changes
+    npm test                  43 tests: every judge, the diff check, and a golden test that
+                              re-judges the 13 recorded Kane runs and fails if a verdict changes
     npm start                 the site on http://localhost:8080, live audits included
     npm run check:consent     one Reject check on the demo shop
     npm run demo:fix          find, fix and prove on the demo shop
@@ -204,6 +232,10 @@ To host it: the `Dockerfile` installs Chrome and Kane CLI. Set `LT_USERNAME` and
     bin/mcp.js           Statute as an MCP server for coding agents
     bin/hook.js          Statute as a Claude Code Stop hook
     bin/scope.js         reads a diff and picks the checks it could affect (check: auto)
+    bin/shots.js         pulls Kane's key screenshots out of the evidence for PR comments
+    laws/                the three laws as Kane CLI test files (kane-cli testmd run)
+    skill/statute/       the agent skill (statute skill)
+    test/                43 tests, including a golden test over 13 recorded Kane runs
     bin/census.js        the Census runner, --rejudge
     server/              the live site, audit queue, Chrome and its live view
     demo-store/          Lumen, a shop with deliberate compliance bugs

@@ -212,6 +212,38 @@ function resetDemo() {
   console.log("Demo store reset: its compliance bugs are back.");
 }
 
+// Copies the Statute agent skill where Claude Code finds it (user-wide, or this project with --project).
+function installSkill() {
+  const os = require("os");
+  const src = path.join(ROOT, "skill", "statute", "SKILL.md");
+  const base = process.argv.includes("--project") ? path.join(process.cwd(), ".claude") : path.join(os.homedir(), ".claude");
+  const dest = path.join(base, "skills", "statute", "SKILL.md");
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+  console.log(`Installed the Statute skill for Claude Code: ${dest}`);
+  console.log("Claude Code now runs Statute after changes to tracking, prices or subscriptions, and isn't done until Kane passes.");
+  console.log("Codex or Gemini CLI: point AGENTS.md or GEMINI.md at the same file.");
+}
+
+// Newest sealed Kane pack: a project's .testmuai folder first, then Kane's own sessions.
+function latestPack() {
+  const os = require("os");
+  const roots = [path.join(process.cwd(), ".testmuai"), path.join(os.homedir(), ".testmuai", "kaneai", "sessions")];
+  const found = [];
+  const walk = (d, depth) => {
+    let list;
+    try { list = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+    for (const e of list) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory() && depth < 5) walk(p, depth + 1);
+      else if (e.name.endsWith(".evidence")) { try { found.push({ p, t: fs.statSync(p).mtimeMs }); } catch {} }
+    }
+  };
+  for (const r of roots) walk(r, 0);
+  found.sort((a, b) => b.t - a.t);
+  return found.length ? found[0].p : null;
+}
+
 // The current folder, unless the user can't write there (for example a shell opened in C:\Windows\System32).
 let _base;
 function writableBase() {
@@ -233,6 +265,8 @@ Code, not a model, decides the verdict. Run any command with npx github:miracle3
   fix <check> --url <url> --start "<cmd>" --app <dir>
                                   Kane finds it, Claude Code fixes it, Kane proves the fix
   init [--fix] [--live <url>]     add the GitHub workflows: every pull request, and production every night
+  judge <check> --latest          judge the newest sealed Kane pack (for example after kane-cli testmd run laws/...)
+  skill [--project]               install the agent skill: Claude Code runs Statute after risky changes
   hook                            Claude Code Stop hook: no "done" until Kane passes
   mcp                             MCP server: gives any agent a statute_check tool
 
@@ -244,6 +278,7 @@ async function main() {
   if (!cmd || cmd === "help" || cmd === "--help" || cmd === "-h") { console.log(HELP); return; }
   if (cmd === "--version" || cmd === "-v") { console.log(require("../package.json").version); return; }
   if (cmd === "init") return require("./init.js")();
+  if (cmd === "skill") return installSkill();
   if (cmd === "demo") return replay(packId);
   if (cmd === "reset-demo") return resetDemo();
   if (cmd === "mcp") return require("./mcp.js");
@@ -258,7 +293,7 @@ async function main() {
   const usage =
     "usage:\n" +
     "  statute check <pack> --url <url> [--start \"<cmd>\"] [--show]\n" +
-    "  statute judge <pack>                     re-judge the last run, no credits\n" +
+    "  statute judge <pack> [--latest | --evidence <file>]   judge a sealed Kane pack, no credits\n" +
     "  statute fix <pack> --url <url> --start \"<cmd>\" --app <dir> [--rounds 3]\n" +
     "  statute report                           rebuild the case file (statute-report/index.html)\n" +
     "  statute reset-demo\n" +
@@ -274,7 +309,15 @@ async function main() {
     const last = path.join(out, `${pack.id}.last-run.json`);
     let saved = fs.existsSync(last) ? JSON.parse(fs.readFileSync(last, "utf8")) : {};
     const ev = arg("evidence");
+    const positional = process.argv.slice(4).find((a) => a.endsWith(".evidence"));
     if (ev && ev !== true) saved = { ...saved, packPath: ev };
+    else if (positional) saved = { ...saved, packPath: positional };
+    else if (arg("latest")) {
+      const found = latestPack();
+      if (!found) { console.error("No sealed Kane evidence pack found in .testmuai/evidence/ or your Kane sessions folder. Run a Kane test first, or pass --evidence <file>."); process.exit(3); }
+      console.log(`Judging ${found}`);
+      saved = { packPath: found };
+    }
     const r = judgeAndReport(pack, { ...saved, out });
     process.exit(r.result.verdict === "pass" ? 0 : r.result.verdict === "violation" ? 1 : 3);
   }

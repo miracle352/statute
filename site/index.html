@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Statute: Reject should mean reject</title>
-<meta name="description" content="Paste your site. Kane CLI opens it in a real browser, clicks Reject on your cookie banner, and records every tracker that still fires. Watch it live and keep the evidence.">
+<title>Statute: your agent's code works. Is it legal?</title>
+<meta name="description" content="Statute sends Kane CLI to use your app like a visitor: refuse the cookies, read the checkout, cancel the plan. Code judges the evidence against the law on every pull request and every night, and your agent fixes what fails.">
 <meta name="theme-color" content="#000000">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
@@ -29,6 +29,7 @@
 
 <header class="nav" id="nav">
   <nav class="nav-links" aria-label="Main">
+    <a href="loop.html">The loop</a>
     <a href="#console-sec">Live audit</a>
     <a href="#census">Census</a>
     <a href="#how">How it works</a>
@@ -45,6 +46,7 @@
 
 <div class="sheet" id="sheet" hidden>
   <nav aria-label="Mobile">
+    <a href="loop.html">The loop</a>
     <a href="#console-sec">Live audit</a>
     <a href="#census">Census</a>
     <a href="#how">How it works</a>
@@ -58,8 +60,8 @@
   <canvas class="terrain" id="terrain" aria-hidden="true"></canvas>
   <div class="hero-inner">
     <p class="chip reveal"><span class="dot"></span>Built on Kane CLI</p>
-    <h1 class="hero-title" data-split>Reject should mean reject.</h1>
-    <p class="hero-sub reveal">Paste your site. Kane CLI opens it in a real browser, clicks Reject on your cookie banner, and records every tracker that still fires. You watch it happen.</p>
+    <h1 class="hero-title" data-split>Your agent's code works. Is it legal?</h1>
+    <p class="hero-sub reveal">Kane CLI uses your app like a visitor: refuses the cookies, reads the checkout, cancels the plan. Code judges what it recorded against the law on every pull request and every night, and your agent fixes what fails.</p>
     <form class="audit reveal" id="auditForm" novalidate>
       <label class="sr" for="urlInput">Your website address</label>
       <div class="bar">
@@ -71,6 +73,7 @@
         <label class="own"><input type="checkbox" id="ownBox"> I own this site or may test it</label>
         <button class="linkish" type="button" id="demoBtn">Watch Kane audit our demo shop</button>
       </div>
+      <p class="audit-loop"><a href="loop.html">Or watch Statute catch, fix and prove a real pull request</a></p>
       <p class="form-msg" id="formMsg" role="status" aria-live="polite"></p>
     </form>
   </div>

@@ -300,3 +300,7 @@ code { font-family: var(--mono); font-size: .9em; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .reveal, [data-split] .w { opacity: 1 !important; transform: none !important; filter: none !important; }
 }
+
+.audit-loop { margin-top: 14px; font-size: 14px; }
+.audit-loop a { color: var(--soft); text-underline-offset: 3px; }
+.audit-loop a:hover { color: var(--text); }

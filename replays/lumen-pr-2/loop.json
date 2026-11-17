@@ -1,0 +1,57 @@
+{
+  "pack": "consent",
+  "url": "http://localhost:3000",
+  "app": "lumen",
+  "strict": true,
+  "timeline": [
+    {
+      "round": 1,
+      "step": "kane",
+      "pack": "consent",
+      "verdict": "violation",
+      "why": "Kane found no way to refuse cookies, and 2 tracker requests went out before the visitor made any choice.",
+      "run": "https://test-manager.lambdatest.com/projects/01M7J0MNACT6FJN3GTSE6TJ9H7/test-cases/01M7N2BJM1MSM0PWFPE42Z1AA8/dashboard/share/US_ZF6RFZJ4SGBRUPV6BB47280WAFRPB1JZKMHSSHA7OD967T24UNC17DDY2XIW1OTN?type=summary&agentView=true&fqdn=summary-page",
+      "evidence": "evidence/consent-1794929771799.evidence",
+      "credits": 21.215470000000003,
+      "kaneStatus": "passed",
+      "kaneSummary": "The requested task was to open a page from the site navigation and reload it.\nNo cookie or analytics consent banner was displayed, so no consent action was needed.\nOpened the Subscribe page from the site navigation and reloaded it successfully.",
+      "at": "2026-11-17T15:36:11.806Z"
+    },
+    {
+      "round": 1,
+      "step": "agent",
+      "agent": "claude-code",
+      "summary": "The Google tag was hardcoded in every page's `<head>` and loaded straight away, so it ran before any choice and the site had no way to decline.\n\nIn `server.js` I removed that static tag and added an Accept/Decline banner. The tag now loads only when the stored choice is \"accepted\", or right after the visitor clicks Accept. On first visit, and after Decline, nothing loads. `node --check server.js` passes, but I haven't run the app or re-run Kane against it.",
+      "at": "2026-11-17T15:36:26.104Z"
+    },
+    {
+      "round": 2,
+      "step": "kane",
+      "pack": "consent",
+      "verdict": "pass",
+      "why": "Kane refused cookies and recorded 11 requests; none went to a known tracker and no visitor ID was sent.",
+      "run": "https://test-manager.lambdatest.com/projects/01M7J0MNACT6FJN3GTSE6TJ9H7/test-cases/01M7N2E2388KSXWP5NN25CR5DJ/dashboard/share/US_N5B7G7MY3YK4D6VNH5IVPQFHYK70FXQPBMPNK9KSKF0XWHHSLHZ4HGV8L9YU6O3P?type=summary&agentView=true&fqdn=summary-page",
+      "evidence": "evidence/consent-1794929845913.evidence",
+      "credits": 19.540259999999996,
+      "kaneStatus": "passed",
+      "kaneSummary": "You asked to open a page from the site navigation and then reload it.\nA cookie analytics consent banner was shown and its decline option was selected.\nThe Subscribe page was opened from the site navigation and then reloaded.\nThe run completed on the Subscribe page.",
+      "at": "2026-11-17T15:37:25.917Z"
+    },
+    {
+      "round": 2,
+      "step": "kane",
+      "pack": "consent-accept",
+      "verdict": "pass",
+      "why": "After \"Accept\", the tags loaded as intended (google-analytics.com, googletagmanager.com).",
+      "run": "https://test-manager.lambdatest.com/projects/01M7J0MNACT6FJN3GTSE6TJ9H7/test-cases/01M7N2FWNXYM77486KWR4BTJ0D/dashboard/share/US_8M7V5571DBUVR8RU6DGHHYIQEE7SUZ7X4GDSL9TLG6DTZ314KQ94F8T818ERXHYD?type=summary&agentView=true&fqdn=summary-page",
+      "evidence": "evidence/consent-accept-1794929886905.evidence",
+      "credits": 5.206802499999999,
+      "kaneStatus": "passed",
+      "kaneSummary": "Accepted the site\u2019s cookie or analytics consent prompt.\nOpened the Subscribe page using the site navigation.\nThe requested navigation was completed successfully.",
+      "at": "2026-11-17T15:38:06.908Z"
+    }
+  ],
+  "credits": 45.9625325,
+  "title": "Lumen PR #2: a pasted Google tag, fixed and proven in CI",
+  "source": "https://github.com/miracle352/lumen/pull/2"
+}

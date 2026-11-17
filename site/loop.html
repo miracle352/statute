@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Statute: watch the loop on a real pull request</title>
+<meta name="description" content="A developer pasted Google's tag into a shop. Kane CLI found tracking with no way to refuse, Claude Code fixed it, Kane proved the fix, and Statute pushed it to the pull request. Recorded from miracle352/lumen#2.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<meta property="og:title" content="Statute: watch Kane catch it, Claude fix it, Kane prove it">
+<meta property="og:description" content="Recorded from a real pull request. Every frame comes from Kane CLI's sealed evidence; every verdict was made by code.">
+<meta property="og:image" content="https://statute-production.up.railway.app/assets/og.png">
+<meta property="og:url" content="https://statute-production.up.railway.app/loop.html">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="assets/fonts/instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  .lp { max-width: var(--max); margin: 0 auto; padding: 0 var(--pad); }
+  .lp-top { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
+  .lp-top a { text-decoration: none; color: var(--soft); font-size: 14px; }
+  .lp-top a:hover { color: var(--text); }
+  .lp-brand { display: inline-flex; gap: 10px; align-items: center; color: var(--text) !important; font-size: 16px !important; }
+  .lp-brand svg { width: 22px; height: 22px; }
+
+  .lp-head { padding: clamp(36px, 8vw, 96px) 0 clamp(28px, 4vw, 48px); max-width: 920px; }
+  .lp-head h1 { font: 400 clamp(40px, 6.4vw, 84px)/1.02 var(--serif); letter-spacing: -.01em; }
+  .lp-head h1 em { color: var(--soft); }
+  .lp-head p { margin-top: 22px; color: var(--soft); font-size: clamp(16px, 1.6vw, 19px); max-width: 64ch; }
+  .lp-head .src { margin-top: 18px; font-size: 14px; color: var(--faint); }
+  .lp-head .src a { color: var(--soft); }
+
+  /* the player */
+  .player { border: 1px solid var(--line); border-radius: 22px; background: var(--panel); overflow: hidden; }
+  .rail { display: grid; grid-template-columns: repeat(6, 1fr); border-bottom: 1px solid var(--line); }
+  .rail button { all: unset; cursor: pointer; padding: 14px 16px 16px; position: relative; color: var(--faint); font-size: 13px; line-height: 1.3; border-right: 1px solid var(--line); }
+  .rail button:last-child { border-right: 0; }
+  .rail button b { display: block; font: 400 12px/1 var(--mono); margin-bottom: 6px; color: var(--faint); }
+  .rail button[aria-current="step"] { color: var(--text); background: var(--panel-2); }
+  .rail button.done { color: var(--soft); }
+  .rail button:focus-visible { outline: 2px solid var(--mint); outline-offset: -2px; }
+  .rail .prog { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--text); border-radius: 0; display: block; }
+  .rail button.done .prog { width: 100%; background: var(--soft); }
+  .rail button.v .prog { background: var(--red); }
+  .rail button.ok .prog { background: var(--mint); }
+
+  .stage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); min-height: 520px; }
+  .copy { padding: clamp(22px, 3vw, 40px); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 16px; }
+  .copy .when { font: 400 12px/1 var(--mono); color: var(--faint); }
+  .copy h2 { font: 400 clamp(28px, 3vw, 40px)/1.08 var(--serif); }
+  .copy p { color: var(--soft); }
+  .copy .verdict { align-self: flex-start; font: 600 13px/1 var(--sans); letter-spacing: .02em; padding: 8px 12px; border-radius: 999px; }
+  .verdict.bad { color: #1a0605; background: var(--red); }
+  .verdict.good { color: #04140c; background: var(--mint); }
+  .copy .quote { border-left: 2px solid var(--line); padding-left: 14px; color: var(--soft); font-style: italic; }
+  .copy .law { font-size: 13px; color: var(--faint); }
+  .view { padding: clamp(18px, 2.4vw, 32px); display: flex; flex-direction: column; gap: 14px; justify-content: center; background: #050505; }
+
+  .scene { display: none; }
+  .scene.on { display: contents; }
+  .scene.on .copy > *, .scene.on .view > * { animation: rise .55s var(--ease) both; }
+  .scene.on .copy > *:nth-child(2), .scene.on .view > *:nth-child(2) { animation-delay: .06s; }
+  .scene.on .copy > *:nth-child(3), .scene.on .view > *:nth-child(3) { animation-delay: .12s; }
+  .scene.on .copy > *:nth-child(4), .scene.on .view > *:nth-child(4) { animation-delay: .18s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+
+  .shot { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #111; }
+  .shot img { width: 100%; height: auto; }
+  .shot .hit { position: absolute; border: 2px solid var(--mint); border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0,0,0,.25); animation: pulse 1.6s var(--ease) infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 9999px rgba(0,0,0,.25), 0 0 0 8px rgba(95,227,167,.25); } }
+  .shot figcaption, .cap { font-size: 12.5px; color: var(--faint); padding: 8px 2px 0; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .code { font: 400 12.5px/1.65 var(--mono); font-variant-ligatures: none; background: #0a0a0a; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; overflow-x: auto; white-space: pre; color: var(--soft); }
+  .code .add { color: #9ff0c9; }
+  .code .del { color: #ff9c96; }
+  .code .file { color: var(--faint); display: block; margin-bottom: 6px; }
+
+  .net { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font: 400 12.5px/1.4 var(--mono); font-variant-ligatures: none; }
+  .net div { display: grid; grid-template-columns: 70px 1fr auto; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--line); align-items: baseline; }
+  .net div:first-child { border-top: 0; }
+  .net .t { color: var(--faint); }
+  .net .u { color: var(--text); overflow-wrap: anywhere; }
+  .net .n { color: var(--red); }
+  .net .n.ok { color: var(--mint); }
+  .net .muted .u, .net .muted .n { color: var(--faint); }
+
+  .controls { display: flex; gap: 10px; align-items: center; padding: 14px 18px; border-top: 1px solid var(--line); }
+  .controls button { all: unset; cursor: pointer; border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-size: 13px; color: var(--soft); }
+  .controls button:hover { color: var(--text); border-color: rgba(255,255,255,.25); }
+  .controls button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+  .controls .spacer { flex: 1; }
+  .controls .count { font: 400 12px/1 var(--mono); color: var(--faint); }
+
+  .check { padding: clamp(48px, 8vw, 96px) 0; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(24px, 4vw, 64px); }
+  .check h2 { font: 400 clamp(30px, 3.6vw, 48px)/1.05 var(--serif); }
+  .check > div > p { color: var(--soft); margin-top: 14px; }
+  .proofs { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .proofs li { border-bottom: 1px solid var(--line); padding: 16px 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: baseline; }
+  .proofs li span { color: var(--soft); font-size: 15px; }
+  .proofs a { color: var(--text); font-size: 14px; white-space: nowrap; }
+  .proofs code { color: var(--text); white-space: normal; }
+  .proofs .runs { white-space: nowrap; color: var(--faint); }
+  .lp-foot { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--faint); font-size: 13px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .lp-foot a { color: var(--soft); }
+
+  @media (max-width: 900px) {
+    .stage { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+    .copy { border-right: 0; border-bottom: 1px solid var(--line); }
+    .rail { grid-template-columns: repeat(6, minmax(112px, 1fr)); overflow-x: auto; scrollbar-width: none; }
+    .check { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .pair { grid-template-columns: 1fr; }
+    .net div { grid-template-columns: 1fr auto; }
+    .net .t { display: none; }
+    .proofs li { grid-template-columns: 1fr; gap: 6px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scene.on .copy > *, .scene.on .view > * { animation: none; }
+    .shot .hit { animation: none; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="grain" aria-hidden="true"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="mark" viewBox="0 0 64 64">
+    <path fill="#5fe3a7" transform="translate(15.16 47.88) scale(0.056 -0.056)" d="M154 -129Q132 -129 112.0 -124.5Q92 -120 76 -110Q66 -103 66 -94L64 16Q64 31 77 31Q85 31 88.0 26.5Q91 22 93 15Q115 -50 136.5 -75.5Q158 -101 188 -101Q217 -101 236.0 -83.0Q255 -65 255 -38Q255 -14 246.0 8.5Q237 31 215.5 58.0Q194 85 154 122Q98 175 69.5 220.5Q41 266 41 315Q41 368 70.5 404.0Q100 440 146 451Q161 454 151 466Q115 504 96.0 538.5Q77 573 77 609Q77 664 118.5 697.0Q160 730 233 730Q255 730 275.0 725.5Q295 721 311 711Q321 704 321 695L323 585Q323 570 310 570Q303 570 299.5 574.5Q296 579 294 586Q272 651 250.5 676.5Q229 702 199 702Q171 702 151.5 684.0Q132 666 132 639Q132 616 141.0 593.0Q150 570 172.0 543.0Q194 516 233 479Q289 426 317.5 380.5Q346 335 346 286Q346 233 316.5 197.0Q287 161 241 150Q226 147 236 135Q272 97 291.0 62.5Q310 28 310 -8Q310 -63 269.0 -96.0Q228 -129 154 -129ZM219 172Q252 177 271.5 199.0Q291 221 291 256Q291 294 270.0 330.5Q249 367 199 417Q186 432 168 429Q134 424 115.0 402.0Q96 380 96 345Q96 308 117.5 271.0Q139 234 188 184Q201 169 219 172Z"/>
+    <path d="M34 44 L39.5 49.5 L52 32" fill="none" stroke="#000" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M34 44 L39.5 49.5 L52 32" fill="none" stroke="#5fe3a7" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol></svg>
+
+<div class="lp">
+  <header class="lp-top">
+    <a class="lp-brand" href="./"><svg aria-hidden="true"><use href="#mark"/></svg>Statute</a>
+    <a href="./#console-sec">Audit a site live</a>
+  </header>
+
+  <main id="main">
+    <section class="lp-head">
+      <h1>A developer pasted Google's tag. <em>Nobody touched the code after that.</em></h1>
+      <p>The site worked, and it broke the law: Google Analytics ran before any visitor was asked. Statute caught it on the pull request, Claude Code fixed it, Kane CLI proved the fix in a real browser, and Statute pushed it. Seven and a half minutes, 46 credits.</p>
+      <p class="src">Recorded from a real pull request, <a href="https://github.com/miracle352/lumen/pull/2">miracle352/lumen#2</a>. Every screenshot comes from Kane's sealed evidence packs; every verdict was made by code, not a model.</p>
+    </section>
+
+    <section class="player" aria-label="The loop, step by step" id="player">
+      <div class="rail" role="tablist" aria-label="Steps">
+        <button role="tab" data-i="0"><b>15:30</b>The change<span class="prog"></span></button>
+        <button role="tab" data-i="1"><b>15:36</b>Kane visits<span class="prog"></span></button>
+        <button role="tab" data-i="2" class="v"><b>15:36</b>The verdict<span class="prog"></span></button>
+        <button role="tab" data-i="3"><b>15:36</b>Claude fixes<span class="prog"></span></button>
+        <button role="tab" data-i="4" class="ok"><b>15:37</b>Kane proves<span class="prog"></span></button>
+        <button role="tab" data-i="5" class="ok"><b>15:38</b>Shipped<span class="prog"></span></button>
+      </div>
+
+      <div class="stage" aria-live="polite">
+        <!-- 1 -->
+        <div class="scene" role="tabpanel">
+          <div class="copy">
+            <span class="when">15:30 UTC · pull request opened</span>
+            <h2>Paste this into the &lt;head&gt; of every page.</h2>
+            <p>That is what Google's setup page tells you to do, so that is what the developer did. The shop still works. Every functional test would pass.</p>
+            <p class="law">Statute read the diff before starting Kane: a tracker domain in <code>server.js</code>, so it ran the consent check and nothing else.</p>
+          </div>
+          <div class="view">
+            <div class="code"><span class="file">server.js  +9 lines</span> &lt;link rel="stylesheet" href="${BASE}/style.css"&gt;
+<span class="add">+&lt;!-- Google tag (gtag.js) --&gt;
++&lt;script async src="https://www.googletagmanager.com/gtag/js?id=G-LUMEN0001"&gt;&lt;/script&gt;
++&lt;script&gt;
++  window.dataLayer = window.dataLayer || [];
++  function gtag(){dataLayer.push(arguments);}
++  gtag('js', new Date());
++
++  gtag('config', 'G-LUMEN0001');
++&lt;/script&gt;</span></div>
+            <p class="cap">The whole change, as committed. <a href="https://github.com/miracle352/lumen/pull/2/commits/91cddaf">Commit 91cddaf</a></p>
+          </div>
+        </div>
+        <!-- 2 -->
+        <div class="scene" role="tabpanel">
+          <div class="copy">
+            <span class="when">15:36 UTC · Kane CLI, real Chrome on the CI runner</span>
+            <h2>Kane looks for a way to refuse. There isn't one.</h2>
+            <p>Kane was told to refuse cookies if a banner appears, then browse and reload. It found no banner, and it recorded every request the page made.</p>
+          </div>
+          <div class="view">
+            <figure class="shot"><img src="assets/loop/before.jpg" alt="Kane's screenshot of the Lumen shop home page, with no cookie banner anywhere." width="1920" height="1080" loading="lazy"></figure>
+            <div class="net" aria-label="Tracker requests Kane recorded">
+              <div><span class="t">loaded</span><span class="u">www.googletagmanager.com/gtag/js</span><span class="n">3×</span></div>
+              <div><span class="t">sent</span><span class="u">www.google-analytics.com/g/collect · client ID 137328153.1794929716</span><span class="n">2×</span></div>
+            </div>
+            <p class="cap">From Kane's evidence pack: 16 requests, 2 of them measurement hits to Google Analytics carrying a visitor ID.</p>
+          </div>
+        </div>
+        <!-- 3 -->
+        <div class="scene" role="tabpanel">
+          <div class="copy">
+            <span class="when">15:36 UTC · judged by code</span>
+            <span class="verdict bad">VIOLATION</span>
+            <h2>Reject means reject, and here there was nothing to reject.</h2>
+            <p>Statute's code, not a model, read the network recording: tracker requests before the visitor made any choice, and no way to refuse them.</p>
+            <p class="law">ePrivacy Directive Art. 5(3): storing or reading non-essential data needs prior consent. GDPR Art. 7: consent must be as easy to refuse as to give.</p>
+          </div>
+          <div class="view">
+            <div class="code">Kane found no way to refuse cookies, and 2 tracker
+requests went out before the visitor made any choice.
+
+<span class="del">verdict      violation</span>
+evidence     consent-1794929771799.evidence (sealed by Kane)
+kane run     <a href="https://test-manager.lambdatest.com/projects/01M7J0MNACT6FJN3GTSE6TJ9H7/test-cases/01M7N2BJM1MSM0PWFPE42Z1AA8/dashboard/share/US_ZF6RFZJ4SGBRUPV6BB47280WAFRPB1JZKMHSSHA7OD967T24UNC17DDY2XIW1OTN?type=summary&amp;agentView=true&amp;fqdn=summary-page">open on TestMu</a>
+credits      21.2</div>
+            <p class="cap">The same evidence always gives the same verdict. You can re-judge it yourself: <code>npx github:miracle352/statute demo lumen-pr-2</code></p>
+          </div>
+        </div>
+        <!-- 4 -->
+        <div class="scene" role="tabpanel">
+          <div class="copy">
+            <span class="when">15:36 UTC · Claude Code, given Kane's report</span>
+            <h2>The agent fixes it, and says it hasn't checked.</h2>
+            <p class="quote">"The Google tag was hardcoded in every page's head and loaded straight away, so it ran before any choice and the site had no way to decline. I removed that static tag and added an Accept/Decline banner. The tag now loads only when the stored choice is accepted. <strong>I haven't run the app or re-run Kane against it.</strong>"</p>
+            <p>That last sentence is why the loop exists. A fix only counts when Kane says so.</p>
+          </div>
+          <div class="view">
+            <div class="code"><span class="file">server.js  +23 −7</span><span class="del">-&lt;script async src="https://www.googletagmanager.com/gtag/js?id=G-LUMEN0001"&gt;&lt;/script&gt;</span>
+<span class="add">+  // Google tag (gtag.js) loads only after the visitor accepts cookies.
++  function loadTag(){
++    if (window.__tagLoaded) return; window.__tagLoaded = true;
++    ...
++    s.src = 'https://www.googletagmanager.com/gtag/js?id=G-LUMEN0001';
++    document.head.appendChild(s);
++  }
++  var choice = null;
++  try { choice = localStorage.getItem('cookie-consent'); } catch (e) {}
++  if (choice === 'accepted') loadTag();
++  ... adds a banner with Decline and Accept ...</span></div>
+            <p class="cap">Claude Code's change, abridged. <a href="https://github.com/miracle352/lumen/pull/2/commits/0d32771">Full diff in commit 0d32771</a></p>
+          </div>
+        </div>
+        <!-- 5 -->
+        <div class="scene" role="tabpanel">
+          <div class="copy">
+            <span class="when">15:37 to 15:38 UTC · Kane CLI, two fresh browsers</span>
+            <span class="verdict good">PASS · PASS</span>
+            <h2>Kane clicks Decline. Then, separately, Accept.</h2>
+            <p>After Decline: 11 requests, none to a tracker, no visitor ID. After Accept: Google Analytics loads as intended. Checking Accept too means deleting analytics can't pass as a fix.</p>
+          </div>
+          <div class="view">
+            <div class="pair">
+              <figure class="shot"><img src="assets/loop/decline.jpg" alt="Kane's screenshot: the new cookie banner, with the Decline button outlined where Kane clicked." width="1920" height="1080" loading="lazy"><span class="hit" style="left:69.5%;top:92.4%;width:4.8%;height:4.2%"></span></figure>
+              <figure class="shot"><img src="assets/loop/accept.jpg" alt="Kane's screenshot: the same banner, with the Accept button outlined where Kane clicked." width="1920" height="1080" loading="lazy"><span class="hit" style="left:74.6%;top:92.4%;width:4.5%;height:4.2%"></span></figure>
+            </div>
+            <div class="net" aria-label="What Kane recorded after each choice">
+              <div><span class="t">decline</span><span class="u">11 requests, 0 to a tracker, no visitor ID</span><span class="n ok">pass</span></div>
+              <div><span class="t">accept</span><span class="u">google-analytics.com, googletagmanager.com loaded</span><span class="n ok">pass</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- 6 -->
+        <div class="scene" role="tabpanel">
+          <div class="copy">
+            <span class="when">15:38:07 UTC · one second after Kane's pass</span>
+            <h2>Statute pushes the proven fix to the pull request.</h2>
+            <p>Only because Kane passed. Had it failed, Claude would have had another round with Kane's new report, and nothing would have been pushed until a pass.</p>
+            <p>Then the PR was merged. The same check now runs on every pull request that touches tracking, prices or subscriptions, and on the live site every night.</p>
+          </div>
+          <div class="view">
+            <div class="code"><span class="file">github-actions commented on miracle352/lumen#2</span><span class="add">FIXED: Reject means reject</span>
+Kane found a violation, Claude Code fixed it, and Kane passed the fix.
+
+- Round 1 · Kane · consent: <span class="del">VIOLATION</span>
+- Round 1 · Claude Code fixed the app
+- Round 2 · Kane · consent: <span class="add">PASS</span>
+- Round 2 · Kane · consent-accept: <span class="add">PASS</span>
+
+Credits used: 46.0
+<span class="add">Fixed and proven.</span> Statute pushed the fix to this
+pull request as 0d32771.</div>
+            <p class="cap">The comment on the pull request, with Kane's screenshots under it. <a href="https://github.com/miracle352/lumen/pull/2">Open the pull request</a></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button type="button" id="prev">Previous</button>
+        <button type="button" id="play" aria-pressed="true">Pause</button>
+        <button type="button" id="next">Next</button>
+        <span class="spacer"></span>
+        <span class="count" id="count">1 / 6</span>
+      </div>
+    </section>
+
+    <section class="check">
+      <div>
+        <h2>Don't take our word for it.</h2>
+        <p>Every link here goes to the original. The evidence packs are in the repository, and the verdicts are recomputed from them by a test on every commit.</p>
+      </div>
+      <ul class="proofs">
+        <li><span>The pull request: the pasted tag, Statute's comment with Kane's screenshots, and the fix commit by statute[bot]</span><a href="https://github.com/miracle352/lumen/pull/2">miracle352/lumen#2</a></li>
+        <li><span>Kane's three runs on TestMu: the violation, the Decline check and the Accept check</span><span class="runs"><a href="https://test-manager.lambdatest.com/projects/01M7J0MNACT6FJN3GTSE6TJ9H7/test-cases/01M7N2BJM1MSM0PWFPE42Z1AA8/dashboard/share/US_ZF6RFZJ4SGBRUPV6BB47280WAFRPB1JZKMHSSHA7OD967T24UNC17DDY2XIW1OTN?type=summary&amp;agentView=true&amp;fqdn=summary-page">Violation</a> · <a href="https://test-manager.lambdatest.com/projects/01M7J0MNACT6FJN3GTSE6TJ9H7/test-cases/01M7N2E2388KSXWP5NN25CR5DJ/dashboard/share/US_N5B7G7MY3YK4D6VNH5IVPQFHYK70FXQPBMPNK9KSKF0XWHHSLHZ4HGV8L9YU6O3P?type=summary&amp;agentView=true&amp;fqdn=summary-page">Decline</a> · <a href="https://test-manager.lambdatest.com/projects/01M7J0MNACT6FJN3GTSE6TJ9H7/test-cases/01M7N2FWNXYM77486KWR4BTJ0D/dashboard/share/US_8M7V5571DBUVR8RU6DGHHYIQEE7SUZ7X4GDSL9TLG6DTZ314KQ94F8T818ERXHYD?type=summary&amp;agentView=true&amp;fqdn=summary-page">Accept</a></span></li>
+        <li><span>The full case file, rebuilt from the sealed packs</span><a href="cases/lumen-pr-2.html">Case file</a></li>
+        <li><span>Re-judge all three runs on your machine, no account, no credits</span><code>npx github:miracle352/statute demo lumen-pr-2</code></li>
+        <li><span>Put the same loop on your repository</span><code>npx github:miracle352/statute init --fix</code></li>
+        <li><span>The counter-case: asked to "add Google Analytics", Claude Code added a consent banner itself. Kane verified its claim was true</span><a href="https://github.com/miracle352/lumen/pull/1">miracle352/lumen#1</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="lp-foot">
+    <span>Statute, built on <a href="https://www.testmuai.com/kane-cli/">Kane CLI</a> for the TestMu AI Kane CLI hackathon.</span>
+    <a href="https://github.com/miracle352/statute">github.com/miracle352/statute</a>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const tabs = [...document.querySelectorAll(".rail button")];
+  const scenes = [...document.querySelectorAll(".scene")];
+  const play = document.getElementById("play");
+  const count = document.getElementById("count");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const DUR = [7000, 8000, 8000, 10000, 9000, 9000];
+  let i = 0, playing = !reduce, start = 0, raf = 0, elapsed = 0;
+
+  function show(n, keepTime) {
+    i = (n + scenes.length) % scenes.length;
+    scenes.forEach((s, k) => s.classList.toggle("on", k === i));
+    tabs.forEach((t, k) => {
+      t.toggleAttribute("aria-current", false);
+      if (k === i) t.setAttribute("aria-current", "step");
+      t.setAttribute("aria-selected", k === i ? "true" : "false");
+      t.tabIndex = k === i ? 0 : -1;
+      t.classList.toggle("done", k < i);
+      t.querySelector(".prog").style.width = k < i ? "100%" : "0";
+    });
+    count.textContent = `${i + 1} / ${scenes.length}`;
+    if (!keepTime) { elapsed = 0; start = performance.now(); }
+  }
+  function tick(now) {
+    if (!playing) return;
+    elapsed = now - start;
+    const p = Math.min(1, elapsed / DUR[i]);
+    tabs[i].querySelector(".prog").style.width = (p * 100) + "%";
+    if (p >= 1) show(i + 1);
+    raf = requestAnimationFrame(tick);
+  }
+  function setPlaying(v) {
+    playing = v;
+    play.textContent = v ? "Pause" : "Play";
+    play.setAttribute("aria-pressed", String(v));
+    cancelAnimationFrame(raf);
+    if (v) { start = performance.now() - elapsed; raf = requestAnimationFrame(tick); }
+  }
+  const go = (n) => { show(n); if (playing) setPlaying(true); };
+  tabs.forEach((t, k) => t.addEventListener("click", () => { setPlaying(false); show(k); }));
+  document.querySelector(".rail").addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); setPlaying(false); show(i + (e.key === "ArrowRight" ? 1 : -1)); tabs[i].focus(); }
+  });
+  document.getElementById("prev").addEventListener("click", () => go(i - 1));
+  document.getElementById("next").addEventListener("click", () => go(i + 1));
+  play.addEventListener("click", () => setPlaying(!playing));
+  // Pause while the player is off screen, so nobody misses the start.
+  const io = new IntersectionObserver(([e]) => { if (!e.isIntersecting && playing) { cancelAnimationFrame(raf); } else if (e.isIntersecting && playing) { start = performance.now() - elapsed; raf = requestAnimationFrame(tick); } }, { threshold: .35 });
+  io.observe(document.getElementById("player"));
+  show(0);
+  setPlaying(playing);
+})();
+</script>
+</body>
+</html>

@@ -38,7 +38,9 @@
     "replays",
     "action.yml",
     "README.md",
-    "site/assets/fonts"
+    "site/assets/fonts",
+    "laws",
+    "skill"
   ],
   "keywords": [
     "kane-cli",

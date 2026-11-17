@@ -35,7 +35,7 @@ inputs:
       On a pull request with a violation, hand Statute's report to Claude Code, let it fix the app,
       and send Kane back. The fix is committed to the pull request only if Kane passes.
       Needs `start` (the app must run on the runner), `claude-token`, contents: write,
-      and actions/checkout with `ref: ${{ github.head_ref }}`. Pull requests from forks are only checked.
+      and actions/checkout set to the pull request branch (ref: github.head_ref). Pull requests from forks are only checked.
     default: "false"
   claude-token:
     description: Claude Code token for `fix` (run `claude setup-token`). Pass it from a repository secret.

@@ -2,7 +2,7 @@
 
 **Your agent's code works. Is it legal?**
 
-Ask a coding agent to "add analytics" and it can add Google Analytics with no consent check. Ask it for a checkout and a "service fee" can appear at the last step. The site works, every functional test passes, and it breaks consumer law. Statute is the check your agent can't skip: Kane CLI opens your app in a real Chrome, clicks Reject, reads the checkout, tries to cancel, and records everything. Code, not a model, judges Kane's sealed evidence against the law. On a violation the report goes back to your agent, and Kane returns to prove the fix. A fix only counts when Kane says so.
+Ask Claude Code to "add Google Analytics" and it will usually add a cookie banner too, and tell you cookies are "only set if you accept". Is that true? Paste Google's own tag the way its setup page says, and analytics fires before anyone is asked. Either way the site works and every functional test passes, and nobody has checked the one thing the law cares about. Statute is the check your agent can't skip: Kane CLI opens your app in a real Chrome, clicks Reject, reads the checkout, tries to cancel, and records everything. Code, not a model, judges Kane's sealed evidence against the law. On a violation the report goes back to your agent, and Kane returns to prove the fix. A fix only counts when Kane says so.
 
 There are no tests to write. The laws are the tests: consent (GDPR and ePrivacy), drip pricing (California SB 478, UK DMCC Act, EU Consumer Rights Directive) and click-to-cancel. It runs on every pull request that could break one, and on your live site every night. The same checks found 7 of 15 big European sites still tracking after Reject.
 

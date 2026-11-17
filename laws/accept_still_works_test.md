@@ -1,6 +1,5 @@
 ---
 mode: testing
-url: "{{url}}"
 tags: [statute, consent]
 ---
 

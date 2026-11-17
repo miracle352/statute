@@ -62,7 +62,7 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 Already use Kane? The laws are plain Kane CLI test files in [`laws/`](laws/). Kane runs them and seals the evidence; Statute's code judges the pack against the law. Kane's own pass only says the steps ran; the legal verdict comes from the evidence.
 
 ```bash
-kane-cli testmd run laws/reject_means_reject_test.md --variables '{"url":"https://your-site.com"}'
+kane-cli testmd run laws/reject_means_reject_test.md --variables '{"url":{"value":"https://your-site.com"}}'
 npx github:miracle352/statute judge consent --latest
 ```
 

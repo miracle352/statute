@@ -8,9 +8,7 @@ Ask Claude Code to "add Google Analytics" and it will usually add a cookie banne
 
 There are no tests to write. The laws are the tests: consent (GDPR and ePrivacy), drip pricing (California SB 478, UK DMCC Act, EU Consumer Rights Directive) and click-to-cancel. It runs on every pull request that could break one, and on your live site every night. The same checks found 7 of 15 big European sites tracking visitors without consent.
 
-[![Watch the 3-minute film: Kane catches a violation, Claude Code fixes it, Kane proves it](docs/video.jpg)](https://youtu.be/4KScNZ5O9bQ)
-
-**Watch the 3-minute film:** [youtu.be/4KScNZ5O9bQ](https://youtu.be/4KScNZ5O9bQ). **Run the loop live yourself:** [statute-production.up.railway.app/loop.html](https://statute-production.up.railway.app/loop.html)
+**Watch the whole loop on a real pull request:** [statute-production.up.railway.app/loop.html](https://statute-production.up.railway.app/loop.html)
 
 ### What Kane CLI does here
 

@@ -6,9 +6,11 @@
 
 Ask Claude Code to "add Google Analytics" and it will usually add a cookie banner too, and tell you cookies are "only set if you accept". Is that true? Paste Google's own tag the way its setup page says, and analytics fires before anyone is asked. Either way the site works and every functional test passes, and nobody has checked the one thing the law cares about. Statute is the check your agent can't skip: Kane CLI opens your app in a real Chrome, clicks Reject, reads the checkout, tries to cancel, and records everything. Code, not a model, judges Kane's sealed evidence against the law. On a violation the report goes back to your agent, and Kane returns to prove the fix. A fix only counts when Kane says so.
 
-There are no tests to write. The laws are the tests: consent (GDPR and ePrivacy), drip pricing (California SB 478, UK DMCC Act, EU Consumer Rights Directive) and click-to-cancel. It runs on every pull request that could break one, and on your live site every night. The same checks found 7 of 15 big European sites still tracking after Reject.
+There are no tests to write. The laws are the tests: consent (GDPR and ePrivacy), drip pricing (California SB 478, UK DMCC Act, EU Consumer Rights Directive) and click-to-cancel. It runs on every pull request that could break one, and on your live site every night. The same checks found 7 of 15 big European sites tracking visitors without consent.
 
-**Watch the whole loop on a real pull request:** [statute-production.up.railway.app/loop.html](https://statute-production.up.railway.app/loop.html)
+[![Watch the 3-minute film: Kane catches a violation, Claude Code fixes it, Kane proves it](docs/video.jpg)](https://youtu.be/4KScNZ5O9bQ)
+
+**Watch the 3-minute film:** [youtu.be/4KScNZ5O9bQ](https://youtu.be/4KScNZ5O9bQ). **Run the loop live yourself:** [statute-production.up.railway.app/loop.html](https://statute-production.up.railway.app/loop.html)
 
 ### What Kane CLI does here
 
@@ -27,7 +29,7 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | Criterion | The proof |
 |---|---|
 | **Bar 1: works end to end** | Click **Run it live** on the [loop page](https://statute-production.up.railway.app/loop.html): our server copies a shop with Google's tag pasted in, Kane catches it, real Claude Code fixes it, Kane proves the fix, while you watch (about 5 minutes). Or, with no account and no credits: `npx github:miracle352/statute demo` |
-| **Bar 2: Kane caught or proved something** | On strangers' live sites: [7 of 15 big European sites](https://statute-production.up.railway.app/#census) kept tracking after Reject; [cruisinginthewake.com](https://statute-production.up.railway.app/cases/in-the-wake.html) tracks before any choice; [HAXCMS](https://statute-production.up.railway.app/cases/haxcms.html) loaded Analytics with no way to refuse |
+| **Bar 2: Kane caught or proved something** | On strangers' live sites: [7 of 15 big European sites](https://statute-production.up.railway.app/#census) tracked visitors without consent; [cruisinginthewake.com](https://statute-production.up.railway.app/cases/in-the-wake.html) tracks before any choice; [HAXCMS](https://statute-production.up.railway.app/cases/haxcms.html) loaded Analytics with no way to refuse |
 | **Bar 3: agent and Kane talk to each other** | [miracle352/lumen#2](https://github.com/miracle352/lumen/pull/2): Kane's report went to Claude Code, which fixed the code and said "I haven't re-run Kane"; Kane then proved Decline and Accept, and Statute pushed the fix to the pull request |
 | **Ships** | A [live site](https://statute-production.up.railway.app) that audits your URL, a [GitHub Action](#use-it-in-ci) with `npx github:miracle352/statute init`, a nightly production watch, a Claude Code hook and [agent skill](skill/statute/SKILL.md), an MCP server, and the laws as [Kane CLI test files](laws/) |
 | **Verified** | Verdicts are code over Kane's sealed evidence, never a model's opinion. 44 tests, including a golden test that re-judges 14 real recorded Kane runs on every commit. A check that can't prove anything says so ("not judged") instead of passing |
@@ -44,7 +46,7 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | 1 min | Watch Kane audit our demo shop live, in a real browser on our server | [statute-production.up.railway.app](https://statute-production.up.railway.app) → "Watch Kane audit our demo shop" |
 | 1 min | Real open-source code: Kane finds HAXCMS loading Google Analytics with no way to refuse, Claude Code adds a banner, Kane proves Decline and Accept. The maintainer closed the PR to solve it in HAXCMS's plugin system instead | [Case file](https://statute-production.up.railway.app/cases/haxcms.html) · [PR haxtheweb/haxcms-nodejs#289](https://github.com/haxtheweb/haxcms-nodejs/pull/289) · [issue #2955](https://github.com/haxtheweb/issues/issues/2955) |
 | 1 min | A live public site, confirmed: cruisinginthewake.com sends 6 Google Analytics hits with a visitor ID before any choice, matching the site's own open issue | [Case file](https://statute-production.up.railway.app/cases/in-the-wake.html) · [their issue #1684](https://github.com/jsschrstrcks1/InTheWake/issues/1684) |
-| 1 min | The Statute Census: 7 of 15 popular European sites kept tracking after Reject, each checked by hand | [Census section](https://statute-production.up.railway.app/#census) |
+| 1 min | The Statute Census: 7 of 15 popular European sites tracked visitors without consent, each checked by hand | [Census section](https://statute-production.up.railway.app/#census) |
 | 1 min | Kane inside Claude Code: the agent's "done" blocked until the law holds, in a real session | [Screenshots](#put-kane-inside-your-agent) |
 | 1 min | The GitHub Action commenting a violation on a real pull request, and skipping the PRs that can't break a law | [The PR](https://github.com/miracle352/statute/pulls?q=is%3Apr+%22Test+the+Statute+action%22) · [how](#on-pull-requests-only-when-it-matters) |
 | 1 min | The nightly watch: Kane checks the live site, opens an issue on a violation, closes it once fixed | [Watch issue](https://github.com/miracle352/statute/issues?q=label%3Astatute) · [how](#on-the-live-site-every-night) |

@@ -30,7 +30,7 @@ try { state = { ...state, ...JSON.parse(fs.readFileSync(stateFile, "utf8")) }; }
 const save = () => fs.writeFileSync(stateFile, JSON.stringify(state));
 function today() {
   const d = new Date().toISOString().slice(0, 10);
-  if (state.day !== d) { state.day = d; state.used = 0; state.ips = {}; state.loops = 0; state.loopIps = {}; save(); }
+  if (state.day !== d) { state.day = d; state.used = 0; state.ips = {}; state.loops = 0; state.loopIps = {}; state.judgeRuns = 0; save(); }
   return d;
 }
 
@@ -80,6 +80,13 @@ function status() {
 
 // Create (or reuse from cache) an audit. `target` is { url, label, internal }.
 const isJudge = (k) => !!process.env.JUDGE_KEY && k === process.env.JUDGE_KEY;
+// The judges' key skips the public caps but has its own daily limit, so a leaked key can't drain the credits.
+function judgeRun() {
+  const cap = Number(process.env.JUDGE_DAILY_CAP || 20);
+  state.judgeRuns = state.judgeRuns || 0;
+  if (state.judgeRuns >= cap) throw Object.assign(new Error(`The judges' key has had ${cap} live runs today. The recorded runs are still here, and it resets at midnight UTC.`), { code: 429 });
+  state.judgeRuns++;
+}
 const COUNTRIES = { DE: "Germany", FR: "France", NL: "the Netherlands", IE: "Ireland", GB: "the UK" };
 
 function create({ target, pack, ip, country, key: judgeKey }) {
@@ -94,6 +101,7 @@ function create({ target, pack, ip, country, key: judgeKey }) {
   }
   if (state.used >= DAILY_CAP && !judge) throw Object.assign(new Error(`Today's ${DAILY_CAP} live audits are used up. Recorded audits are still available below, and the counter resets at midnight UTC.`), { code: 429 });
   if (!target.internal && !judge && (state.ips[ip] || 0) >= PER_IP) throw Object.assign(new Error(`You've run ${PER_IP} live audits today. Try again tomorrow, or run Statute yourself from GitHub.`), { code: 429 });
+  if (judge) judgeRun();
   state.used++;
   if (!target.internal) state.ips[ip] = (state.ips[ip] || 0) + 1;
   save();
@@ -252,6 +260,7 @@ function createLoop({ ip, key: judgeKey }) {
   if (!process.env.CLAUDE_CODE_OAUTH_TOKEN && !process.env.ANTHROPIC_API_KEY) throw Object.assign(new Error("Live loops are switched off on this server (no Claude Code token). Watch the recorded run above."), { code: 503 });
   if (state.loops >= cap && !judge) throw Object.assign(new Error(`Today's ${cap} live runs are done (each uses real Kane credits). The recorded run above is always here, and the counter resets at midnight UTC.`), { code: 429 });
   if (!judge && (state.loopIps[ip] || 0) >= 1) throw Object.assign(new Error("Thanks for running one. Each live run uses real Kane credits, so it's one per visitor a day; the recorded run above is always here."), { code: 429 });
+  if (judge) judgeRun();
   state.loops++;
   state.loopIps[ip] = (state.loopIps[ip] || 0) + 1;
   save();

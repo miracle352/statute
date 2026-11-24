@@ -105,6 +105,39 @@
   .foot code { font: 400 12.5px/1.6 var(--mono); color: var(--soft); background: rgba(255,255,255,.05); padding: 2px 6px; border-radius: 6px; }
   .foot a { color: var(--soft); }
 
+
+  /* The replay: one orchestrated moment */
+  .tl { position: relative; overflow: hidden; background: radial-gradient(120% 90% at 0% 0%, rgba(95,227,167,.07), transparent 55%), var(--panel); }
+  .tl.bad { background: radial-gradient(120% 90% at 0% 0%, rgba(95,227,167,.06), transparent 50%), radial-gradient(80% 90% at 100% 100%, rgba(255,97,89,.10), transparent 60%), var(--panel); }
+  .tl-head { align-items: start; }
+  .runstats { margin: 6px 0 0; font: 400 13px/1.4 var(--mono); color: var(--soft); font-variant-numeric: tabular-nums; }
+  .runstats b { color: var(--text); font-weight: 500; }
+  .runstats .r { color: #ff8a84; }
+  .replay { font: 500 13px/1 var(--sans); color: var(--soft); background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; cursor: pointer; transition: color .2s, background .2s; }
+  .replay:hover { color: var(--text); background: rgba(255,255,255,.1); }
+  .legend { margin-top: 10px; }
+  #svg .tick { transform-box: fill-box; transform-origin: 50% 100%; animation: grow .45s cubic-bezier(.2,1.5,.4,1) both; }
+  #svg .fade { animation: fadein .5s var(--ease) both; }
+  #svg .drop { transform-box: fill-box; transform-origin: 50% 0; animation: drop .5s var(--ease) both; }
+  #svg .pop { transform-box: fill-box; transform-origin: 50% 50%; animation: pop2 .5s cubic-bezier(.2,1.6,.4,1) both; }
+  #svg .ring { transform-box: fill-box; transform-origin: 50% 50%; opacity: 0; animation: ring 1.8s ease-out infinite; animation-fill-mode: none; }
+  @keyframes grow { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+  @keyframes fadein { from { opacity: 0; } }
+  @keyframes drop { from { transform: scaleY(0); opacity: 0; } }
+  @keyframes pop2 { from { transform: scale(0); } }
+  @keyframes ring { from { transform: scale(1); opacity: .8; } to { transform: scale(4.2); opacity: 0; } }
+  .vword.wait { color: var(--faint); font-size: clamp(22px, 2.4vw, 30px); }
+  .vword.vstamp { display: inline-block; animation: slam .5s cubic-bezier(.2,1.4,.4,1) both; transform-origin: 0 60%; }
+  .vword.vstamp.violation { text-shadow: 0 0 34px rgba(255,97,89,.55); }
+  .vword.vstamp.pass { text-shadow: 0 0 34px rgba(95,227,167,.45); }
+  @keyframes slam { from { opacity: 0; transform: scale(1.9) rotate(-4deg); } 60% { opacity: 1; transform: scale(.96) rotate(0); } to { transform: none; } }
+  .vwhy, .res { transition: opacity .5s var(--ease), transform .5s var(--ease); }
+  .hold .vwhy, .hold .res { opacity: 0; transform: translateY(6px); }
+  @media (prefers-reduced-motion: reduce) {
+    #svg .tick, #svg .fade, #svg .drop, #svg .pop, #svg .ring, .vword.vstamp { animation: none !important; }
+    .hold .vwhy, .hold .res { opacity: 1; transform: none; }
+  }
+
   @media (max-width: 960px) {
     .intro { grid-template-columns: 1fr; }
     .work { grid-template-columns: minmax(0, 1fr); }
@@ -176,18 +209,22 @@
 
       <div class="panel tl">
         <div class="tl-head">
-          <h2>The run, as Kane recorded it</h2>
-          <div class="legend">
-            <span><i class="lg-rec"></i>Kane recording</span>
-            <span><i class="lg-gap"></i>Not recorded</span>
-            <span><i class="lg-site"></i>Request to the site</span>
-            <span><i class="lg-trk"></i>Tracker</span>
-            <span><i class="lg-bad"></i>Broke an expectation</span>
-            <span>▲ Page load</span>
-            <span>┆ Kane refused cookies</span>
+          <div>
+            <h2>The run, as Kane recorded it</h2>
+            <p class="runstats" id="stats" aria-live="off"></p>
           </div>
+          <button class="replay" id="replay" type="button" aria-label="Replay the run">↻ Replay</button>
         </div>
         <div class="scroller"><svg id="svg" viewBox="0 0 1000 205" role="img" aria-label="Timeline of the run"></svg></div>
+        <div class="legend">
+          <span><i class="lg-rec"></i>Kane recording</span>
+          <span><i class="lg-gap"></i>Not recorded</span>
+          <span><i class="lg-site"></i>Request to the site</span>
+          <span><i class="lg-trk"></i>Tracker</span>
+          <span><i class="lg-bad"></i>Broke an expectation</span>
+          <span>▲ Page load</span>
+          <span>┆ Kane refused cookies</span>
+        </div>
         <div class="tl-note" id="note"></div>
         <div class="tl-note">Hover a mark to see the request.</div>
       </div>
@@ -254,9 +291,6 @@
     $("kane").textContent = WORD[k] || k;
     $("kane").className = "vword " + (k === "passed" ? "pass" : k === "failed" ? "violation" : "");
     $("test").textContent = (d.test.title || fileName || "") + (d.rulesFrom === "inferred" ? ". This test had no expectations, so Statute wrote them from what Kane did" : "");
-    $("verdict").textContent = WORD[d.verdict] || d.verdict;
-    $("verdict").className = "vword " + d.verdict;
-    $("why").textContent = d.why;
 
     const list = $("results");
     list.replaceChildren();
@@ -265,8 +299,9 @@
       row.append(el("span", "res-st " + r.status, STATUS[r.status] || r.status), el("span", "res-rule", r.rule), el("span", "res-detail", r.detail));
       list.append(row);
     }
-    drawTimeline(d.view);
+    lastData = d;
     showLeak(d.view);
+    reveal(d);
   }
 
   function showLeak(v) {
@@ -297,59 +332,82 @@
     return n;
   }
 
-  function drawTimeline(v) {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let playToken = 0;
+  let lastData = null;
+
+  function drawTimeline(v, onDone) {
+    const token = ++playToken;
     const svg = $("svg");
     svg.replaceChildren();
     $("note").replaceChildren();
-    if (!v) { $("note").textContent = "This pack has no timestamps to draw."; return; }
-    const W = 1000, L = 14, R = 986;
+    $("stats").textContent = "";
+    if (!v) { $("note").textContent = "This pack has no timestamps to draw."; onDone && onDone(); return; }
+    const L = 14, R = 986;
     const span = Math.max(v.duration, 1000) * 1.02;
     const x = (t) => L + (Math.max(0, t) / span) * (R - L);
+    const PLAY = reduce ? 0 : Math.min(4200, Math.max(2600, v.requests.length * 6));
+    const START = reduce ? 0 : 350;
+    const at = (t) => START + (Math.max(0, t) / span) * PLAY;
+    const delay = (node, t) => { node.style.animationDelay = `${Math.round(at(t))}ms`; return node; };
+
     const defs = s("defs", {});
-    const pat = s("pattern", { id: "hatch", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" });
-    pat.append(s("rect", { width: 2, height: 6, fill: "rgba(255,255,255,.2)" }));
-    defs.append(pat);
+    const pat = s("pattern", { id: "hatch", width: 7, height: 7, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" });
+    pat.append(s("rect", { width: 2, height: 7, fill: "rgba(255,255,255,.22)" }));
+    if (!reduce) { const an = s("animateTransform", { attributeName: "patternTransform", type: "translate", from: "0 0", to: "0 7", dur: "1.6s", repeatCount: "indefinite", additive: "sum" }); pat.append(an); }
+    const band = s("linearGradient", { id: "band", x1: 0, y1: 0, x2: 0, y2: 1 });
+    band.append(s("stop", { offset: "0", "stop-color": "rgba(95,227,167,.30)" }), s("stop", { offset: "1", "stop-color": "rgba(95,227,167,.06)" }));
+    const glow = s("filter", { id: "glow", filterUnits: "userSpaceOnUse", x: 0, y: 0, width: 1000, height: 205 });
+    glow.append(s("feGaussianBlur", { stdDeviation: 3, result: "b" }));
+    const mg = s("feMerge", {}); mg.append(s("feMergeNode", { in: "b" }), s("feMergeNode", { in: "SourceGraphic" })); glow.append(mg);
+    const clip = s("clipPath", { id: "reveal" });
+    const clipRect = s("rect", { x: 0, y: 0, width: reduce ? 1000 : 0, height: 205 });
+    clip.append(clipRect);
+    defs.append(pat, band, glow, clip);
     svg.append(defs);
 
-    // Recording band
+    // Recording band, revealed by the playhead.
     const bandY = 22, bandH = 46;
-    svg.append(s("rect", { x: L, y: bandY, width: R - L, height: bandH, fill: "url(#hatch)", rx: 6 }));
+    const layer = s("g", { "clip-path": "url(#reveal)" });
+    layer.append(s("rect", { x: L, y: bandY, width: R - L, height: bandH, fill: "url(#hatch)", rx: 8 }));
     for (const st of v.steps) {
       if (st.from == null) continue;
       const a = x(st.from), b = Math.max(x(st.to), a + 3);
       const g = s("g", {});
-      g.append(s("rect", { x: a, y: bandY, width: b - a, height: bandH, fill: "#0f1f18", stroke: "rgba(95,227,167,.55)", rx: 6 }));
+      g.append(s("rect", { x: a, y: bandY, width: b - a, height: bandH, fill: "#0b1712", rx: 8 }));
+      g.append(s("rect", { x: a, y: bandY, width: b - a, height: bandH, fill: "url(#band)", stroke: "rgba(95,227,167,.7)", rx: 8 }));
+      g.append(s("line", { x1: a + 6, x2: b - 6, y1: bandY + 1.5, y2: bandY + 1.5, stroke: "rgba(163,245,207,.45)" }));
       g.append(s("title", {}, `Step: ${st.title} (recorded ${(st.from / 1000).toFixed(1)}–${(st.to / 1000).toFixed(1)} s)`));
       if (b - a > 70) {
-        const label = st.title.length > (b - a) / 7.2 ? st.title.slice(0, Math.max(3, Math.floor((b - a) / 7.2) - 1)) + "…" : st.title;
-        g.append(s("text", { x: a + 8, y: bandY + 28, fill: "#a3f5cf", "font-size": 13, "font-family": "Geist, system-ui, sans-serif" }, label));
+        const room = Math.floor((b - a) / 7.2) - 1;
+        const label = st.title.length > room ? st.title.slice(0, Math.max(3, room)) + "…" : st.title;
+        g.append(s("text", { x: a + 10, y: bandY + 28, fill: "#c9fbe3", "font-size": 13, "font-family": "Geist, system-ui, sans-serif" }, label));
       }
-      svg.append(g);
+      layer.append(g);
     }
     for (const gp of v.gaps) {
       const a = x(gp.from), b = x(gp.to);
-      if (b - a > 150) svg.append(s("text", { x: (a + b) / 2, y: bandY + 28, fill: "rgba(255,255,255,.7)", "font-size": 12.5, "text-anchor": "middle", "font-family": "Geist, system-ui, sans-serif" }, `not recorded, ${((gp.to - gp.from) / 1000).toFixed(1)} s`));
+      if (b - a > 150) layer.append(s("text", { x: (a + b) / 2, y: bandY + 28, fill: "rgba(255,255,255,.75)", "font-size": 12.5, "text-anchor": "middle", "font-family": "Geist, system-ui, sans-serif" }, `not recorded, ${((gp.to - gp.from) / 1000).toFixed(1)} s`));
     }
+    svg.append(layer);
 
-    // Settle window: the seconds after the last page load that had to be recorded.
     if (v.settle) {
       const last = v.loads[v.loads.length - 1];
-      if (last) svg.append(s("rect", { x: x(last.t), y: bandY - 6, width: x(last.t + v.settle.needed) - x(last.t), height: bandH + 12, fill: "none", stroke: "#f3c969", "stroke-dasharray": "5 4", rx: 8 }));
+      if (last) svg.append(delay(s("rect", { class: "fade", x: x(last.t), y: bandY - 6, width: x(last.t + v.settle.needed) - x(last.t), height: bandH + 12, fill: "none", stroke: "#f3c969", "stroke-dasharray": "5 4", rx: 10 }), last.t));
     }
 
-    // Requests
     const base = 150;
+    svg.append(s("line", { x1: L, x2: R, y1: base, y2: base, stroke: "rgba(255,255,255,.16)" }));
     for (const rf of v.refusals || []) {
-      const g = s("g", {});
-      g.append(s("line", { x1: x(rf.t), x2: x(rf.t), y1: bandY + bandH + 4, y2: base, stroke: "rgba(255,255,255,.8)", "stroke-dasharray": "3 3" }));
-      g.append(s("text", { x: x(rf.t) + 6, y: bandY + bandH + 16, fill: "rgba(255,255,255,.85)", "font-size": 12, "font-family": "Geist, system-ui, sans-serif" }, "Kane refused cookies"));
+      const g = delay(s("g", { class: "drop" }), rf.t);
+      g.append(s("line", { x1: x(rf.t), x2: x(rf.t), y1: bandY + bandH + 4, y2: base, stroke: "rgba(255,255,255,.85)", "stroke-dasharray": "3 3" }));
+      g.append(s("text", { x: x(rf.t) + 6, y: bandY + bandH + 16, fill: "#fff", "font-size": 12, "font-family": "Geist, system-ui, sans-serif" }, "Kane refused cookies"));
       g.append(s("title", {}, rf.text));
       svg.append(g);
     }
-    svg.append(s("line", { x1: L, x2: R, y1: base, y2: base, stroke: "rgba(255,255,255,.16)" }));
     for (const ld of v.loads) {
-      const g = s("g", {});
-      g.append(s("path", { d: `M${x(ld.t) - 5},${base + 14} L${x(ld.t) + 5},${base + 14} L${x(ld.t)},${base + 6} Z`, fill: "rgba(255,255,255,.75)" }));
+      const g = delay(s("g", { class: "pop" }), ld.t);
+      g.append(s("path", { d: `M${x(ld.t) - 5},${base + 14} L${x(ld.t) + 5},${base + 14} L${x(ld.t)},${base + 6} Z`, fill: "rgba(255,255,255,.8)" }));
       g.append(s("title", {}, `Page load: ${ld.path} at ${(ld.t / 1000).toFixed(1)} s`));
       svg.append(g);
     }
@@ -357,42 +415,87 @@
     for (const r of v.requests) {
       if (r.flagged) { flagged.push(r); continue; }
       const tall = r.kind === "tracker" ? 30 : r.kind === "tracker-quiet" ? 18 : r.kind === "site" ? 14 : 20;
-      const color = r.kind === "tracker" ? "#f3c969" : r.kind === "tracker-quiet" ? "rgba(243,201,105,.5)" : r.kind === "site" ? "rgba(255,255,255,.5)" : "rgba(160,190,255,.7)";
-      const g = s("g", {});
-      g.append(s("line", { x1: x(r.t), x2: x(r.t), y1: base, y2: base - tall, stroke: color, "stroke-width": r.kind === "tracker" ? 2.5 : 1.5 }));
-      g.append(s("title", {}, `${r.method} ${r.host}${r.path}  ${r.status || ""}  at ${(r.t / 1000).toFixed(2)} s${r.tracker ? "  (tracker)" : ""}`));
-      svg.append(g);
+      const color = r.kind === "tracker" ? "#f3c969" : r.kind === "tracker-quiet" ? "rgba(243,201,105,.5)" : r.kind === "site" ? "rgba(255,255,255,.55)" : "rgba(160,190,255,.75)";
+      const ln = delay(s("line", { class: "tick", x1: x(r.t), x2: x(r.t), y1: base, y2: base - tall, stroke: color, "stroke-width": r.kind === "tracker" ? 2.5 : 1.5, filter: r.kind === "tracker" ? "url(#glow)" : null }), r.t);
+      if (r.kind !== "tracker") ln.removeAttribute("filter");
+      ln.append(s("title", {}, `${r.method} ${r.host}${r.path}  ${r.status || ""}  at ${(r.t / 1000).toFixed(2)} s${r.tracker ? "  (tracker)" : ""}`));
+      svg.append(ln);
     }
     flagged.forEach((r, i) => {
       const cx = x(r.t), top = base - 62 - (i % 2) * 14;
       const g = s("g", {});
-      g.append(s("line", { x1: cx, x2: cx, y1: base, y2: top, stroke: "#ff6159", "stroke-width": 2.5 }));
-      g.append(s("circle", { cx, cy: top, r: 6, fill: "#ff6159" }));
+      g.append(delay(s("line", { class: "tick", x1: cx, x2: cx, y1: base, y2: top, stroke: "#ff6159", "stroke-width": 2.5, filter: "url(#glow)" }), r.t));
+      if (i === 0) {
+        const ring = delay(s("circle", { class: "ring", cx, cy: top, r: 6, fill: "none", stroke: "#ff6159", "stroke-width": 1.5 }), r.t + span * 0.02);
+        g.append(ring);
+      }
+      g.append(delay(s("circle", { class: "pop", cx, cy: top, r: 6, fill: "#ff6159", filter: "url(#glow)" }), r.t));
       if (i === 0) {
         const txt = r.flagged.value ? `${r.flagged.value} → ${r.host}` : `${r.host}${flagged.length > 1 ? ` and ${flagged.length - 1} more` : ""}`;
-        const right = cx > W * 0.62;
-        g.append(s("text", { x: right ? cx - 12 : cx + 12, y: top + 4, fill: "#ffb4af", "font-size": 13, "text-anchor": right ? "end" : "start", "font-family": "JetBrains Mono, ui-monospace, monospace" }, txt));
+        const right = cx > 620;
+        g.append(delay(s("text", { class: "fade", x: right ? cx - 13 : cx + 13, y: top + 4, fill: "#ffb4af", "font-size": 13, "text-anchor": right ? "end" : "start", "font-family": "JetBrains Mono, ui-monospace, monospace" }, txt), r.t + span * 0.03));
       }
       g.append(s("title", {}, `${r.method} ${r.host}${r.path} at ${(r.t / 1000).toFixed(2)} s: ${r.flagged.rule}`));
       svg.append(g);
     });
 
-    // Axis
     const step = [1, 2, 5, 10, 15, 30, 60, 120].map((n) => n * 1000).find((n) => span / n <= 10) || 300000;
     for (let t = 0; t <= span; t += step) {
       svg.append(s("line", { x1: x(t), x2: x(t), y1: base + 22, y2: base + 28, stroke: "rgba(255,255,255,.3)" }));
       svg.append(s("text", { x: x(t), y: base + 44, fill: "rgba(255,255,255,.45)", "font-size": 12, "text-anchor": "middle", "font-family": "Geist, system-ui, sans-serif" }, `${t / 1000} s`));
     }
 
-    const note = $("note");
-    if (v.settle) {
-      const b = el("b", "", `Kane recorded only ${(v.settle.recorded / 1000).toFixed(1)} s of traffic after ${v.settle.path} loaded.`);
-      note.append(b, document.createTextNode(` Tags often send a few seconds after a page loads, and Kane records traffic inside steps, not between them, so a clean result here proves nothing. The dashed box is what had to be recorded. End the step that loads the page with "Then wait 10 seconds."`));
-    } else if (v.gaps.length) {
-      note.textContent = `Kane didn't record ${v.gaps.length === 1 ? "one stretch" : v.gaps.length + " stretches"} between steps. Statute checked that the seconds after the last page load were recorded, so the result stands.`;
-    }
-    if (v.truncated) note.append(document.createTextNode(" Only the first 2,500 requests are drawn; all of them were judged."));
+    // Playhead and counters.
+    const head = s("g", { opacity: reduce ? 0 : 1 });
+    const hl = s("line", { x1: L, x2: L, y1: bandY - 8, y2: base + 2, stroke: "#5fe3a7", "stroke-width": 1.5, filter: "url(#glow)" });
+    const ht = s("text", { x: L + 6, y: bandY - 10, fill: "#a3f5cf", "font-size": 12, "font-family": "JetBrains Mono, ui-monospace, monospace" }, "0.0 s");
+    head.append(hl, ht);
+    svg.append(head);
+
+    const total = v.requests.length;
+    const trackers = v.requests.filter((r) => r.kind === "tracker").length;
+    const bad = flagged.length;
+    const stats = (seen, trk, br) => {
+      const p = $("stats");
+      p.replaceChildren();
+      const b = (n, cls) => { const e = el("b", cls || "", String(n)); return e; };
+      p.append(b(seen), document.createTextNode(` request${seen === 1 ? "" : "s"} recorded · `), b(trk), document.createTextNode(` to trackers · `), b(br, br ? "r" : ""), document.createTextNode(` broke an expectation`));
+    };
+    const times = v.requests.map((r) => r.t);
+    if (reduce) { stats(total, trackers, bad); onDone && onDone(); return; }
+    const t0 = performance.now();
+    const frame = (now) => {
+      if (token !== playToken) return;
+      const e = now - t0 - START;
+      const frac = Math.min(1, Math.max(0, e / PLAY));
+      const tt = frac * span;
+      const px = x(tt);
+      clipRect.setAttribute("width", String(px));
+      hl.setAttribute("x1", px); hl.setAttribute("x2", px);
+      ht.setAttribute("x", Math.min(px + 6, R - 60)); ht.textContent = `${(tt / 1000).toFixed(1)} s`;
+      stats(times.filter((t) => t <= tt).length, v.requests.filter((r) => r.kind === "tracker" && r.t <= tt).length, flagged.filter((r) => r.t <= tt).length);
+      if (frac < 1) requestAnimationFrame(frame);
+      else { head.style.transition = "opacity .6s"; head.setAttribute("opacity", 0); clipRect.setAttribute("width", 1000); onDone && onDone(); }
+    };
+    requestAnimationFrame(frame);
   }
+
+  // Kane's word shows at once; Statute's stamps down once the run has played.
+  function reveal(d) {
+    const out = document.querySelector(".out");
+    out.classList.add("hold");
+    $("verdict").textContent = "Reading Kane's evidence…";
+    $("verdict").className = "vword wait";
+    $("why").textContent = d.why;
+    document.querySelector(".tl").classList.toggle("bad", d.verdict === "violation");
+    drawTimeline(d.view, () => {
+      $("verdict").textContent = WORD[d.verdict] || d.verdict;
+      $("verdict").className = "vword vstamp " + d.verdict;
+      out.classList.remove("hold");
+      document.querySelectorAll(".res").forEach((r, i) => { r.style.transitionDelay = `${120 + i * 90}ms`; });
+    });
+  }
+  $("replay").addEventListener("click", () => { if (lastData) reveal(lastData); });
 
   document.querySelectorAll(".src[data-sample]").forEach((b) => b.addEventListener("click", () => {
     current = { sample: b.dataset.sample };

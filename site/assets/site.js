@@ -303,7 +303,7 @@
         // Our server's browser is in the US; many sites only ask EU visitors. Running it locally checks what your visitors see.
         const p = document.createElement("span");
         p.className = "eu-retry";
-        p.innerHTML = ` Our browser runs in the US, and many sites only ask visitors in the EU. Check from where your visitors are: <code>npx github:miracle352/statute check consent --url ${esc(last.label.replace(/^https?:\/\//, "https://"))}</code>`;
+        p.innerHTML = ` Our browser runs in the US, and many sites only ask visitors in the EU. Check from where your visitors are: <code>npx @miracle352/statute check consent --url ${esc(last.label.replace(/^https?:\/\//, "https://"))}</code>`;
         vtext.append(p);
       }
       mode.textContent = cached ? "Saved result" : "Finished";

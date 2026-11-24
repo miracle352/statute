@@ -9,7 +9,7 @@ kane-cli testmd run laws/reject_means_reject_test.md --variables '{"url":{"value
 # PowerShell: write the variables to a file instead
 #   '{"url":{"value":"https://your-site.com"}}' | Out-File -Encoding ascii vars.json
 #   kane-cli testmd run laws\reject_means_reject_test.md --variables-file vars.json
-npx github:miracle352/statute judge consent --latest
+npx @miracle352/statute judge consent --latest
 ```
 
 | Test file | Judge with | Law |

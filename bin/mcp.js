@@ -3,7 +3,7 @@
 // Cursor, Codex...) can ask Kane CLI to check a page against a law and get the
 // verdict back in its own conversation.
 //
-//   claude mcp add statute -- npx -y github:miracle352/statute mcp
+//   claude mcp add statute -- npx -y @miracle352/statute mcp
 //
 // Each check runs `statute check` in a child process, so Kane's progress output
 // never mixes with the protocol on stdout.

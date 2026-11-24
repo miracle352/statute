@@ -1,7 +1,7 @@
 {
-  "name": "statute",
-  "version": "0.2.0",
-  "description": "Consumer-law checks your coding agent can't skip. Kane CLI visits your app in a real browser; code, not a model, judges what it recorded.",
+  "name": "@miracle352/statute",
+  "version": "0.3.0",
+  "description": "Kane CLI says the steps ran. Statute checks what the page did: trackers after Reject, typed data leaving the site, consumer-law checks. Code, not a model, judges Kane's evidence.",
   "bin": {
     "statute": "bin/statute.js",
     "statute-mcp": "bin/mcp.js",
@@ -40,7 +40,8 @@
     "README.md",
     "site/assets/fonts",
     "laws",
-    "skill"
+    "skill",
+    "examples/expect"
   ],
   "keywords": [
     "kane-cli",
@@ -51,7 +52,10 @@
     "claude-code",
     "mcp",
     "github-action",
-    "dark-patterns"
+    "dark-patterns",
+    "privacy",
+    "evidence",
+    "e2e"
   ],
   "repository": {
     "type": "git",

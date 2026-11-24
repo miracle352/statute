@@ -28,10 +28,10 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 
 | Criterion | The proof |
 |---|---|
-| **Bar 1: works end to end** | Click **Run it live** on the [loop page](https://statute-production.up.railway.app/loop.html): our server copies a shop with Google's tag pasted in, Kane catches it, real Claude Code fixes it, Kane proves the fix, while you watch (about 5 minutes). Or, with no account and no credits: `npx github:miracle352/statute demo` |
+| **Bar 1: works end to end** | Click **Run it live** on the [loop page](https://statute-production.up.railway.app/loop.html): our server copies a shop with Google's tag pasted in, Kane catches it, real Claude Code fixes it, Kane proves the fix, while you watch (about 5 minutes). Or, with no account and no credits: `npx @miracle352/statute demo` |
 | **Bar 2: Kane caught or proved something** | On strangers' live sites: [7 of 15 big European sites](https://statute-production.up.railway.app/#census) tracked visitors without consent; [cruisinginthewake.com](https://statute-production.up.railway.app/cases/in-the-wake.html) tracks before any choice; [HAXCMS](https://statute-production.up.railway.app/cases/haxcms.html) loaded Analytics with no way to refuse; on [3 of 8 online pharmacies](#expectations-for-any-kane-test), a "pregnancy test" search reached an ad or marketing company, twice after refusing cookies. Kane also had a recording gap, now [reported upstream](https://github.com/LambdaTest/kane-cli/issues/249) |
 | **Bar 3: agent and Kane talk to each other** | [miracle352/lumen#2](https://github.com/miracle352/lumen/pull/2): Kane's report went to Claude Code, which fixed the code and said "I haven't re-run Kane"; Kane then proved Decline and Accept, and Statute pushed the fix to the pull request |
-| **Ships** | A [live site](https://statute-production.up.railway.app) that audits your URL, a [GitHub Action](#use-it-in-ci) with `npx github:miracle352/statute init`, a [page that judges any Kane evidence pack](https://statute-production.up.railway.app/judge.html), a nightly production watch, a Claude Code hook and [agent skill](skill/statute/SKILL.md), an MCP server, and the laws as [Kane CLI test files](laws/) |
+| **Ships** | A [live site](https://statute-production.up.railway.app) that audits your URL, a [GitHub Action](#use-it-in-ci) with `npx @miracle352/statute init`, a [page that judges any Kane evidence pack](https://statute-production.up.railway.app/judge.html), a nightly production watch, a Claude Code hook and [agent skill](skill/statute/SKILL.md), an MCP server, and the laws as [Kane CLI test files](laws/) |
 | **Verified** | Verdicts are code over Kane's sealed evidence, never a model's opinion. 69 tests, including a golden test that re-judges 16 real recorded Kane runs on every commit. A check that can't prove anything says so ("not judged") instead of passing |
 | **Closed loop** | Three places: in CI (the Action fixes and pushes only what Kane passed), in Claude Code (its Stop hook won't let the agent finish until Kane passes), and live on the [loop page](https://statute-production.up.railway.app/loop.html) |
 | **Craft** | No tests to write: the laws are the tests. One command to add it to a repo. A pull request that touches only styles or docs costs 0 credits. Kane's screenshots right in the PR comment |
@@ -51,8 +51,8 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | 1 min | The GitHub Action commenting a violation on a real pull request, and skipping the PRs that can't break a law | [The PR](https://github.com/miracle352/statute/pulls?q=is%3Apr+%22Test+the+Statute+action%22) · [how](#on-pull-requests-only-when-it-matters) |
 | 1 min | The nightly watch: Kane checks the live site, opens an issue on a violation, closes it once fixed | [Watch issue](https://github.com/miracle352/statute/issues?q=label%3Astatute) · [how](#on-the-live-site-every-night) |
 | 1 min | **Kane passed; the page still leaked.** A newsletter test passes in Kane while the visitor's email goes to Google Analytics. Statute catches it from the same evidence, Claude Code fixes it, Kane and Statute prove the fix. Drop in your own Kane evidence pack on the same page | [Judge a Kane run](https://statute-production.up.railway.app/judge.html) · [how](#expectations-for-any-kane-test) |
-| 1 min | Run it yourself with no Kane credits and no login | `npx github:miracle352/statute demo` |
-| 2 min | Add it to your repo: every pull request, plus production every night | `npx github:miracle352/statute init --fix --live https://your-site.com` |
+| 1 min | Run it yourself with no Kane credits and no login | `npx @miracle352/statute demo` |
+| 2 min | Add it to your repo: every pull request, plus production every night | `npx @miracle352/statute init --fix --live https://your-site.com` |
 | 10 min | Run the whole loop on your machine (Kane CLI and Claude Code needed, about 31 credits) | `npm run demo:fix` |
 
 `demo` needs only Node 22. It re-judges seven recorded runs (Lumen PR #2 from GitHub Actions, the Kane test file on the demo shop, the demo shop's Reject, price and cancel checks, the newsletter expectations, and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
@@ -100,16 +100,16 @@ Verify the page says the visitor is on the list.
 ```
 
 ```bash
-npx github:miracle352/statute expect examples/expect/newsletter_test.md --url http://localhost:4173/ --start "node demo-store/server.js"
+npx @miracle352/statute expect examples/expect/newsletter_test.md --url http://localhost:4173/ --start "node demo-store/server.js"
 # and the loop: Claude Code fixes what broke, Kane runs the test again
-npx github:miracle352/statute expect examples/expect/newsletter_test.md --url http://localhost:4173/ --start "node demo-store/server.js" --fix --app demo-store
+npx @miracle352/statute expect examples/expect/newsletter_test.md --url http://localhost:4173/ --start "node demo-store/server.js" --fix --app demo-store
 # judge any sealed pack again, no credits
-npx github:miracle352/statute expect .testmuai/evidence/<run>.evidence
+npx @miracle352/statute expect .testmuai/evidence/<run>.evidence
 ```
 
 | Rule | What it catches |
 |---|---|
-**A recorded run.** On our demo shop, the newsletter form sends the address in the page URL, and Google Analytics copies the URL into its hit. Kane ran the test above and **passed** it: every step worked. Statute read the same pack and found `jane.doe@example.com` in a request to `www.google-analytics.com`. Claude Code got the report and changed the form to POST and gated the tags on consent; Kane ran the test again and passed, and this time Statute agreed: the hit went out without the address. Both sealed packs are in [`replays/newsletter-expect/`](replays/newsletter-expect/), and `npx github:miracle352/statute replay newsletter-expect` judges them again with no credits.
+**A recorded run.** On our demo shop, the newsletter form sends the address in the page URL, and Google Analytics copies the URL into its hit. Kane ran the test above and **passed** it: every step worked. Statute read the same pack and found `jane.doe@example.com` in a request to `www.google-analytics.com`. Claude Code got the report and changed the form to POST and gated the tags on consent; Kane ran the test again and passed, and this time Statute agreed: the hit went out without the address. Both sealed packs are in [`replays/newsletter-expect/`](replays/newsletter-expect/), and `npx @miracle352/statute replay newsletter-expect` judges them again with no credits.
 
 **On real sites.** On 24 November 2026 we ran [`examples/expect/search_test.md`](examples/expect/search_test.md) on 13 large online pharmacies in 9 countries: refuse optional cookies if the site lets you, search for "pregnancy test", wait 10 seconds. Kane got through the search on 8; the other 5 blocked automated browsers or failed to load. On **3 of the 8, the search reached an advertising or marketing company**: on 2 after Kane had refused optional cookies, on 1 that offered no way to refuse. Kane passed 2 of those 3 runs. Of the rest, 1 sent the search to an analytics tool it discloses under "decline advertising cookies", 1 only to its own service providers (site search, an accessibility widget), and 3 kept it on the site. Six were checked from Nigeria, two from the US over a VPN. Each finding was checked against Kane's screenshots of the refusal. We don't publish the names: one run per site isn't enough to accuse anyone, and the test is public, so anyone can repeat it.
 
@@ -136,17 +136,17 @@ Already use Kane? The laws are plain Kane CLI test files in [`laws/`](laws/). Ka
 
 ```bash
 kane-cli testmd run laws/reject_means_reject_test.md --variables '{"url":{"value":"https://your-site.com"}}'
-npx github:miracle352/statute judge consent --latest
+npx @miracle352/statute judge consent --latest
 ```
 
-Proven on a real run: Kane ran `reject_means_reject_test.md` against the demo shop and reported PASSED, because every step ran. Statute judged the same sealed pack a VIOLATION: Google Analytics and the Meta pixel loaded before any choice and again after Reject, with a visitor ID. Re-judge it yourself with `npx github:miracle352/statute demo kane-testmd-demo-shop`.
+Proven on a real run: Kane ran `reject_means_reject_test.md` against the demo shop and reported PASSED, because every step ran. Statute judged the same sealed pack a VIOLATION: Google Analytics and the Meta pixel loaded before any choice and again after Reject, with a visitor ID. Re-judge it yourself with `npx @miracle352/statute demo kane-testmd-demo-shop`.
 
 There's one file per law (`reject_means_reject`, `accept_still_works`, `price_shown_is_price_paid`, `cancel_as_easy_as_signup`), each judged with `judge consent`, `consent-accept`, `price` or `cancel`. `--latest` reads the newest sealed pack in `.testmuai/evidence/` or your Kane sessions folder.
 
 **The agent skill.** Kane ships a skill so coding agents verify their own work (`npx @testmuai/kane-cli-skill`). Statute's skill sits next to it: after a change to tracking, prices or subscriptions, the agent runs the matching law check, fixes what fails, and isn't done until Kane passes.
 
-    npx github:miracle352/statute skill            # for every project
-    npx github:miracle352/statute skill --project  # just this repository (.claude/skills/statute)
+    npx @miracle352/statute skill            # for every project
+    npx @miracle352/statute skill --project  # just this repository (.claude/skills/statute)
 
 ## Put Kane inside your agent
 
@@ -154,7 +154,7 @@ Statute can sit inside the coding agent itself, so the agent hears from Kane wit
 
 **As an MCP server.** Any agent that speaks MCP gets two tools: `statute_check` (Kane checks a page against a rule; the verdict and evidence come back into the conversation) and `statute_rules` (the rules and the laws behind them).
 
-    claude mcp add statute -- npx -y github:miracle352/statute mcp
+    claude mcp add statute -- npx -y @miracle352/statute mcp
 
 Then ask the agent to "check consent on http://localhost:3000 with statute", or let it decide to after it touches a cookie banner, a price or a subscription flow.
 
@@ -166,7 +166,7 @@ Then ask the agent to "check consent on http://localhost:3000 with statute", or 
 
 ```json
 { "hooks": { "Stop": [ { "hooks": [ { "type": "command", "timeout": 900,
-  "command": "npx -y github:miracle352/statute hook" } ] } ] } }
+  "command": "npx -y @miracle352/statute hook" } ] } ] } }
 ```
 
 `check` can be a list, for example `["consent", "price"]`. Projects without a `statute.json` are left alone.

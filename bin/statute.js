@@ -275,7 +275,7 @@ function writableBase() {
 }
 
 const HELP = `Statute: Kane CLI checks your app against consumer law in a real browser.
-Code, not a model, decides the verdict. Run any command with npx github:miracle352/statute <command>
+Code, not a model, decides the verdict. Run any command with npx @miracle352/statute <command>
 
   demo                            see it work: re-judge recorded Kane runs (no account, no credits)
   check consent --url <url>       Kane clicks Reject on the cookie banner; Statute reports what still tracked
@@ -345,7 +345,7 @@ async function main() {
   }
   if (!opts.url || opts.url === true) { console.error("--url is required\n\n" + usage); process.exit(2); }
   if (!kane.available()) {
-    console.error("Statute needs Kane CLI to visit the site.\n  npm install -g @testmuai/kane-cli\n  kane-cli login        (or set LT_USERNAME and LT_ACCESS_KEY)\n\nNo account yet? Free credits: https://www.testmuai.com/kane-cli/\nTo see Statute work without Kane: npx github:miracle352/statute demo");
+    console.error("Statute needs Kane CLI to visit the site.\n  npm install -g @testmuai/kane-cli\n  kane-cli login        (or set LT_USERNAME and LT_ACCESS_KEY)\n\nNo account yet? Free credits: https://www.testmuai.com/kane-cli/\nTo see Statute work without Kane: npx @miracle352/statute demo");
     process.exit(3);
   }
   if (cmd === "check") {

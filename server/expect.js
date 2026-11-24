@@ -45,7 +45,7 @@ function cleanRules(list) {
 }
 
 async function handle(req, res, { sendJson, ip }) {
-  if (!allowed(ip)) return sendJson(res, 429, { error: "That's 60 judgements in an hour from your address. Try again in a while, or run it locally: npx github:miracle352/statute expect <pack>." });
+  if (!allowed(ip)) return sendJson(res, 429, { error: "That's 60 judgements in an hour from your address. Try again in a while, or run it locally: npx @miracle352/statute expect <pack>." });
   let p, rules, source;
   try {
     const type = String(req.headers["content-type"] || "");

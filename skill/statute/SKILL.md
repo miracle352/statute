@@ -17,14 +17,14 @@ Run the matching check after any change that touches:
 | product prices, fees, surcharges, cart or checkout totals | `price` |
 | subscribing, plans, renewals, cancelling | `cancel` |
 
-If you are unsure, `npx -y github:miracle352/statute` lists the checks. A change to styling or copy alone needs none.
+If you are unsure, `npx -y @miracle352/statute` lists the checks. A change to styling or copy alone needs none.
 
 ## How
 
 1. Start nothing yourself. Statute starts the app, sends Kane, and stops the app:
 
    ```bash
-   npx -y github:miracle352/statute check consent --url http://localhost:3000 --start "npm start"
+   npx -y @miracle352/statute check consent --url http://localhost:3000 --start "npm start"
    ```
 
    Use the project's real start command and port. For a deployed preview, pass its URL and leave out `--start`.
@@ -41,7 +41,7 @@ If you are unsure, `npx -y github:miracle352/statute` lists the checks. A change
 To let Statute run the whole loop itself (Kane finds it, you fix it, Kane proves it, up to three rounds):
 
 ```bash
-npx -y github:miracle352/statute fix consent --url http://localhost:3000 --start "npm start" --app .
+npx -y @miracle352/statute fix consent --url http://localhost:3000 --start "npm start" --app .
 ```
 
 ## Already have a sealed Kane pack?
@@ -49,7 +49,7 @@ npx -y github:miracle352/statute fix consent --url http://localhost:3000 --start
 Kane CLI test files for each law are in the Statute repository (`laws/*_test.md`). After `kane-cli testmd run ...`, judge the newest pack with no new run:
 
 ```bash
-npx -y github:miracle352/statute judge consent --latest
+npx -y @miracle352/statute judge consent --latest
 ```
 
 ## Needs

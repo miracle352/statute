@@ -141,3 +141,33 @@ test("traffic recorded for the seconds after the last load lets a clean result c
   ] });
   assert.equal(expect.judge(p, ['text "jane@x.com" never leaves this site']).results[0].status, "pass");
 });
+
+test("judge page view: flags only the request that carried the email, and reads packs from bytes", () => {
+  const { view } = require("../src/expect-view");
+  const file = path.join(__dirname, "..", "replays", "newsletter-expect", "evidence", "newsletter_test-round1-1795518837738.evidence");
+  const p = packReader.readBuffer(fs.readFileSync(file));
+  const v = view(p, expect.judge(p, p.expectations));
+  const bad = v.requests.filter((r) => r.flagged);
+  assert.equal(bad.length, 1);
+  assert.equal(bad[0].host, "www.google-analytics.com");
+  assert.match(bad[0].url, /email%3Djane\.doe%2540example\.com/);
+  assert.ok(v.requests.filter((r) => !r.flagged).every((r) => r.url === null));
+  assert.deepEqual(v.loads.map((l) => l.path), ["/", "/newsletter"]);
+});
+
+test("judge API: a sample is judged, junk is refused, nothing is kept", async () => {
+  const api = require("../server/expect");
+  const { Readable } = require("stream");
+  const call = (body, headers) => new Promise((resolve) => {
+    const req = Object.assign(Readable.from([Buffer.from(body)]), { headers });
+    api.handle(req, {}, { ip: "test", sendJson: (_res, code, json) => resolve({ code, json }) });
+  });
+  const ok = await call(JSON.stringify({ sample: "before" }), { "content-type": "application/json" });
+  assert.equal(ok.code, 200);
+  assert.equal(ok.json.kaneStatus, "passed");
+  assert.equal(ok.json.verdict, "violation");
+  const edited = await call(JSON.stringify({ sample: "before", rules: ["no server errors"] }), { "content-type": "application/json" });
+  assert.equal(edited.json.verdict, "pass");
+  const junk = await call("not a zip at all, just some text here", { "content-type": "application/octet-stream" });
+  assert.equal(junk.code, 400);
+});

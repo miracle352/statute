@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const audit = require("./audit");
 const guard = require("./guard");
+const expectApi = require("./expect");
 
 process.env.BASE = "/demo";
 const shop = require("../demo-store/server.js");
@@ -76,6 +77,7 @@ const server = http.createServer(async (req, res) => {
 
   if (p === "/api/status" && req.method === "GET") return sendJson(res, 200, audit.status());
   if (p === "/api/audit" && req.method === "POST") return startAudit(req, res);
+  if (p === "/api/expect" && req.method === "POST") return expectApi.handle(req, res, { sendJson, ip: clientIp(req) });
   if (p === "/api/loop" && req.method === "GET") return sendJson(res, 200, audit.loopStatus());
   if (p === "/api/loop" && req.method === "POST") {
     let body = {};

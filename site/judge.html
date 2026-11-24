@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Statute: Kane said passed. What did the page do?</title>
+<meta name="description" content="Drop in a Kane CLI evidence pack and write what the page must never do. Statute checks every request, cookie and console message Kane recorded, with code. Nothing is stored.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<meta property="og:title" content="Kane said passed. What did the page do?">
+<meta property="og:description" content="A Kane test passed while the visitor's email went to Google Analytics. Statute reads Kane's evidence and shows it. Try it on your own pack.">
+<meta property="og:image" content="https://statute-production.up.railway.app/assets/og.png">
+<meta property="og:url" content="https://statute-production.up.railway.app/judge.html">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="assets/fonts/instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  .jp { max-width: 1320px; margin: 0 auto; padding: 0 var(--pad) 80px; }
+  .jp-top { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; gap: 16px; }
+  .jp-top a { text-decoration: none; color: var(--soft); font-size: 14px; }
+  .jp-top a:hover { color: var(--text); }
+  .jp-top nav { display: flex; gap: 22px; }
+  .jp-brand { display: inline-flex; gap: 10px; align-items: center; color: var(--text) !important; font: 400 24px/1 var(--serif) !important; }
+  .jp-brand img { width: 24px; height: 24px; }
+
+  .intro { padding: clamp(18px, 4vw, 44px) 0 clamp(22px, 3vw, 34px); display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 20px 48px; align-items: end; }
+  .intro h1 { font: 400 clamp(36px, 5vw, 68px)/1 var(--serif); letter-spacing: -.015em; }
+  .intro p { color: var(--soft); font-size: 15.5px; max-width: 52ch; margin: 0; }
+
+  .sources { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .src { font: 500 14px/1 var(--sans); padding: 11px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--soft); cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
+  .src:hover { color: var(--text); }
+  .src[aria-pressed="true"] { background: #fff; color: #000; border-color: #fff; }
+  .src:focus-visible, .btn:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; }
+  .src-file { display: inline-flex; gap: 8px; align-items: center; }
+  .src-file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .src-note { color: var(--faint); font-size: 13px; margin-left: 4px; }
+
+  .work { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 14px; align-items: start; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; }
+  .rules { padding: 18px; display: grid; gap: 12px; position: sticky; top: 14px; }
+  .rules h2 { font: 400 24px/1.1 var(--serif); }
+  .rules p { margin: 0; color: var(--soft); font-size: 13.5px; }
+  .rules textarea { width: 100%; min-height: 210px; resize: vertical; box-sizing: border-box; background: #050505; color: var(--text); border: 1px solid var(--line); border-radius: 12px; padding: 12px; font: 400 12.5px/1.7 var(--mono); font-variant-ligatures: none; }
+  .rules .btn { width: 100%; }
+  .rules details { font-size: 13px; color: var(--soft); }
+  .rules summary { cursor: pointer; color: var(--text); padding: 4px 0; }
+  .rules ul { margin: 8px 0 0; padding-left: 16px; display: grid; gap: 6px; font: 400 12px/1.5 var(--mono); }
+  .rules code { font: inherit; color: var(--text); }
+
+  .out { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
+  .verdicts { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); }
+  .vcell { padding: 18px 20px; display: grid; gap: 4px; align-content: start; }
+  .vcell + .vcell { border-left: 1px solid var(--line); }
+  .vwho { font-size: 13px; color: var(--faint); }
+  .vword { font: 400 clamp(30px, 3.4vw, 44px)/1 var(--serif); }
+  .vword.pass { color: var(--mint); }
+  .vword.violation { color: var(--red); }
+  .vword.inconclusive { color: #f3c969; }
+  .vwhy { color: var(--soft); font-size: 14px; margin-top: 6px; }
+  .vtest { color: var(--faint); font-size: 13px; margin-top: 2px; }
+
+  .tl { padding: 18px 20px 14px; }
+  .tl-head { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; flex-wrap: wrap; margin-bottom: 10px; }
+  .tl-head h2 { font: 400 22px/1.1 var(--serif); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--soft); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
+  .lg-rec { background: rgba(95,227,167,.16); border: 1px solid rgba(95,227,167,.5); }
+  .lg-gap { background: repeating-linear-gradient(135deg, rgba(255,255,255,.22) 0 2px, transparent 2px 5px); border: 1px solid rgba(255,255,255,.2); }
+  .lg-site { width: 2px !important; height: 12px !important; background: rgba(255,255,255,.55); }
+  .lg-trk { width: 3px !important; height: 14px !important; background: #f3c969; }
+  .lg-bad { width: 10px !important; height: 10px !important; border-radius: 50% !important; background: var(--red); }
+  .scroller { overflow-x: auto; }
+  .scroller svg { display: block; min-width: 680px; width: 100%; height: auto; }
+  .tl-note { margin-top: 10px; font-size: 13.5px; color: var(--soft); }
+  .tl-note b { color: #f3c969; font-weight: 500; }
+
+  .results { padding: 6px 0; }
+  .res { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 4px 16px; padding: 14px 20px; }
+  .res + .res { border-top: 1px solid var(--line); }
+  .res-st { font-size: 13px; font-weight: 500; padding-top: 2px; }
+  .res-st.pass { color: var(--mint); }
+  .res-st.fail { color: var(--red); }
+  .res-st.unknown { color: #f3c969; }
+  .res-rule { font: 400 13px/1.5 var(--mono); color: var(--text); overflow-wrap: anywhere; }
+  .res-detail { grid-column: 2; color: var(--soft); font-size: 13.5px; overflow-wrap: anywhere; }
+
+  [hidden] { display: none !important; }
+  .leak { padding: 18px 20px; display: grid; gap: 10px; border-color: rgba(255,97,89,.4); }
+  .leak h2 { font: 400 22px/1.1 var(--serif); }
+  .leak .url { font: 400 12.5px/1.65 var(--mono); color: var(--soft); word-break: break-all; background: #050505; border-radius: 12px; padding: 12px 14px; border: 1px solid var(--line); }
+  .leak mark { background: rgba(255,97,89,.22); color: #ffb4af; border-radius: 3px; padding: 0 2px; }
+  .leak p { margin: 0; color: var(--soft); font-size: 13.5px; }
+
+  .err { color: #ffb4af; font-size: 14px; min-height: 1.4em; }
+  .busy .out { opacity: .45; transition: opacity .2s; }
+  .drop { position: fixed; inset: 0; z-index: 60; display: none; place-items: center; background: rgba(0,0,0,.86); border: 2px dashed var(--mint); font: 400 clamp(28px, 4vw, 48px)/1.1 var(--serif); color: var(--mint); text-align: center; padding: 24px; }
+  .dragging .drop { display: grid; }
+  .foot { margin-top: 28px; color: var(--faint); font-size: 13.5px; display: grid; gap: 6px; }
+  .foot code { font: 400 12.5px/1.6 var(--mono); color: var(--soft); background: rgba(255,255,255,.05); padding: 2px 6px; border-radius: 6px; }
+  .foot a { color: var(--soft); }
+
+  @media (max-width: 960px) {
+    .intro { grid-template-columns: 1fr; }
+    .work { grid-template-columns: minmax(0, 1fr); }
+    .rules { position: static; }
+  }
+  @media (max-width: 620px) {
+    .verdicts { grid-template-columns: 1fr; }
+    .vcell + .vcell { border-left: 0; border-top: 1px solid var(--line); }
+    .res { grid-template-columns: 1fr; }
+    .res-detail { grid-column: 1; }
+    .jp-top nav { gap: 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="drop" aria-hidden="true">Drop the .evidence file to judge it</div>
+<div class="jp">
+  <header class="jp-top">
+    <a class="jp-brand" href="/"><img src="assets/favicon.svg" alt="">Statute</a>
+    <nav><a href="/loop.html">The loop</a><a href="https://github.com/miracle352/statute#expectations-for-any-kane-test">How it works</a><a href="https://github.com/miracle352/statute">GitHub</a></nav>
+  </header>
+
+  <section class="intro">
+    <h1>Kane said passed. What did the page do?</h1>
+    <p>A Kane CLI test tells you the steps ran. Its evidence pack also holds every request, cookie and console message the page made along the way. Write what the page must never do, and Statute checks the pack with plain code. Start with a recorded run, or drop in your own <code>.evidence</code> file. Packs are read in memory and never stored.</p>
+  </section>
+
+  <div class="sources" role="group" aria-label="Evidence to judge">
+    <button class="src" data-sample="before" aria-pressed="true">Recorded run: before the fix</button>
+    <button class="src" data-sample="after" aria-pressed="false">After Claude Code's fix</button>
+    <label class="src src-file" aria-pressed="false" id="mine">Your pack<input type="file" id="file" accept=".evidence,.zip"></label>
+    <span class="src-note" id="srcnote">From <code>.testmuai/evidence/</code> after any <code>kane-cli testmd run</code></span>
+  </div>
+
+  <div class="work">
+    <form class="panel rules" id="form">
+      <h2>Expectations</h2>
+      <p>One per line. Steps are the test's <code>##</code> headings, in quotes.</p>
+      <label class="sr" for="rules">Expectations</label>
+      <textarea id="rules" spellcheck="false"></textarea>
+      <button class="btn btn-white" type="submit">Judge the evidence</button>
+      <div class="err" id="err" role="alert"></div>
+      <details>
+        <summary>Rules Statute knows</summary>
+        <ul>
+          <li><code>no request to a tracker after "Step"</code></li>
+          <li><code>no request to a third party</code></li>
+          <li><code>no visitor ID sent to a tracker</code></li>
+          <li><code>no tracker cookie before "Step"</code></li>
+          <li><code>what was typed in "Step" never leaves this site</code></li>
+          <li><code>text "jane@x.com" never leaves this site</code></li>
+          <li><code>value of $total never leaves this site</code></li>
+          <li><code>no server errors</code></li>
+          <li><code>no failed requests to this site</code></li>
+          <li><code>no console errors</code></li>
+          <li><code>value $total is at most $price plus $tax</code></li>
+          <li><code>clicks in "Cancel" at most clicks in "Subscribe"</code></li>
+        </ul>
+      </details>
+    </form>
+
+    <div class="out" aria-live="polite">
+      <div class="panel verdicts">
+        <div class="vcell"><span class="vwho">Kane CLI's result</span><span class="vword" id="kane">…</span><span class="vtest" id="test"></span></div>
+        <div class="vcell"><span class="vwho">Statute, from the same evidence</span><span class="vword" id="verdict">…</span><span class="vwhy" id="why"></span></div>
+      </div>
+
+      <div class="panel tl">
+        <div class="tl-head">
+          <h2>The run, as Kane recorded it</h2>
+          <div class="legend">
+            <span><i class="lg-rec"></i>Kane recording</span>
+            <span><i class="lg-gap"></i>Not recorded</span>
+            <span><i class="lg-site"></i>Request to the site</span>
+            <span><i class="lg-trk"></i>Tracker</span>
+            <span><i class="lg-bad"></i>Broke an expectation</span>
+            <span>▲ Page load</span>
+          </div>
+        </div>
+        <div class="scroller"><svg id="svg" viewBox="0 0 1000 205" role="img" aria-label="Timeline of the run"></svg></div>
+        <div class="tl-note" id="note"></div>
+        <div class="tl-note">Hover a mark to see the request.</div>
+      </div>
+
+      <div class="panel leak" id="leak" hidden>
+        <h2>The request that broke it</h2>
+        <p id="leakwhat"></p>
+        <div class="url" id="leakurl"></div>
+      </div>
+
+      <div class="panel results" id="results"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Run it on your own tests: <code>npx github:miracle352/statute expect your_test.md --url https://your-site.com</code></span>
+    <span>Or judge a pack you already have, with no credits: <code>npx github:miracle352/statute expect .testmuai/evidence/&lt;run&gt;.evidence</code></span>
+    <span>Up to 30 MB per pack and 60 judgements an hour. <a href="https://github.com/miracle352/statute/blob/main/src/expect.js">The rules are code</a>; no model reads your evidence.</span>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+  let current = { sample: "before" };
+  let fileBuf = null;
+  let fileName = "";
+
+  const WORD = { pass: "Pass", violation: "Violation", inconclusive: "Not proven", passed: "Passed", failed: "Failed" };
+  const STATUS = { pass: "Held", fail: "Broken", unknown: "Not checked" };
+
+  function setSource(kind) {
+    document.querySelectorAll(".src").forEach((b) => b.setAttribute("aria-pressed", String(
+      (kind === "file" && b.id === "mine") || (b.dataset.sample && b.dataset.sample === kind))));
+  }
+
+  async function judge(opts = {}) {
+    $("err").textContent = "";
+    document.body.classList.add("busy");
+    const rules = opts.keepRules ? $("rules").value.split("\n").map((s) => s.trim()).filter(Boolean) : null;
+    try {
+      let res;
+      if (current.sample) {
+        res = await fetch("/api/expect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sample: current.sample, rules }) });
+      } else {
+        const headers = { "Content-Type": "application/octet-stream" };
+        if (rules) headers["X-Statute-Rules"] = encodeURIComponent(JSON.stringify(rules));
+        res = await fetch("/api/expect", { method: "POST", headers, body: fileBuf });
+      }
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Couldn't judge that.");
+      render(d);
+    } catch (e) {
+      $("err").textContent = e.message;
+    } finally {
+      document.body.classList.remove("busy");
+    }
+  }
+
+  function render(d) {
+    $("rules").value = d.rules.join("\n");
+    const k = String(d.kaneStatus || "unknown");
+    $("kane").textContent = WORD[k] || k;
+    $("kane").className = "vword " + (k === "passed" ? "pass" : k === "failed" ? "violation" : "");
+    $("test").textContent = (d.test.title || fileName || "") + (d.rulesFrom === "default" ? " · no expectations in this test, so basic ones are used" : "");
+    $("verdict").textContent = WORD[d.verdict] || d.verdict;
+    $("verdict").className = "vword " + d.verdict;
+    $("why").textContent = d.why;
+
+    const list = $("results");
+    list.replaceChildren();
+    for (const r of d.results) {
+      const row = el("div", "res");
+      row.append(el("span", "res-st " + r.status, STATUS[r.status] || r.status), el("span", "res-rule", r.rule), el("span", "res-detail", r.detail));
+      list.append(row);
+    }
+    drawTimeline(d.view);
+    showLeak(d.view);
+  }
+
+  function showLeak(v) {
+    const bad = v && v.requests.find((r) => r.flagged && r.url);
+    $("leak").hidden = !bad;
+    if (!bad) return;
+    $("leakwhat").textContent = `${bad.method} to ${bad.host}, ${(bad.t / 1000).toFixed(1)} s into the run. It breaks: ${bad.flagged.rule}`;
+    const box = $("leakurl");
+    box.replaceChildren();
+    const dec = (u) => u.replace(/(%[0-9a-f]{2})+/gi, (m) => { try { return decodeURIComponent(m); } catch { return m; } });
+    const shown = dec(dec(bad.url));
+    const value = bad.flagged.value;
+    const at = value ? shown.toLowerCase().indexOf(value.toLowerCase()) : -1;
+    if (at < 0) { box.textContent = shown; return; }
+    box.append(document.createTextNode(shown.slice(0, at)), el("mark", "", shown.slice(at, at + value.length)), document.createTextNode(shown.slice(at + value.length)));
+  }
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function s(tag, attrs, text) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function drawTimeline(v) {
+    const svg = $("svg");
+    svg.replaceChildren();
+    $("note").replaceChildren();
+    if (!v) { $("note").textContent = "This pack has no timestamps to draw."; return; }
+    const W = 1000, L = 14, R = 986;
+    const span = Math.max(v.duration, 1000) * 1.02;
+    const x = (t) => L + (Math.max(0, t) / span) * (R - L);
+    const defs = s("defs", {});
+    const pat = s("pattern", { id: "hatch", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" });
+    pat.append(s("rect", { width: 2, height: 6, fill: "rgba(255,255,255,.2)" }));
+    defs.append(pat);
+    svg.append(defs);
+
+    // Recording band
+    const bandY = 22, bandH = 46;
+    svg.append(s("rect", { x: L, y: bandY, width: R - L, height: bandH, fill: "url(#hatch)", rx: 6 }));
+    for (const st of v.steps) {
+      if (st.from == null) continue;
+      const a = x(st.from), b = Math.max(x(st.to), a + 3);
+      const g = s("g", {});
+      g.append(s("rect", { x: a, y: bandY, width: b - a, height: bandH, fill: "#0f1f18", stroke: "rgba(95,227,167,.55)", rx: 6 }));
+      g.append(s("title", {}, `Step: ${st.title} (recorded ${(st.from / 1000).toFixed(1)}–${(st.to / 1000).toFixed(1)} s)`));
+      if (b - a > 70) {
+        const label = st.title.length > (b - a) / 7.2 ? st.title.slice(0, Math.max(3, Math.floor((b - a) / 7.2) - 1)) + "…" : st.title;
+        g.append(s("text", { x: a + 8, y: bandY + 28, fill: "#a3f5cf", "font-size": 13, "font-family": "Geist, system-ui, sans-serif" }, label));
+      }
+      svg.append(g);
+    }
+    for (const gp of v.gaps) {
+      const a = x(gp.from), b = x(gp.to);
+      if (b - a > 150) svg.append(s("text", { x: (a + b) / 2, y: bandY + 28, fill: "rgba(255,255,255,.7)", "font-size": 12.5, "text-anchor": "middle", "font-family": "Geist, system-ui, sans-serif" }, `not recorded, ${((gp.to - gp.from) / 1000).toFixed(1)} s`));
+    }
+
+    // Settle window: the seconds after the last page load that had to be recorded.
+    if (v.settle) {
+      const last = v.loads[v.loads.length - 1];
+      if (last) svg.append(s("rect", { x: x(last.t), y: bandY - 6, width: x(last.t + v.settle.needed) - x(last.t), height: bandH + 12, fill: "none", stroke: "#f3c969", "stroke-dasharray": "5 4", rx: 8 }));
+    }
+
+    // Requests
+    const base = 150;
+    svg.append(s("line", { x1: L, x2: R, y1: base, y2: base, stroke: "rgba(255,255,255,.16)" }));
+    for (const ld of v.loads) {
+      const g = s("g", {});
+      g.append(s("path", { d: `M${x(ld.t) - 5},${base + 14} L${x(ld.t) + 5},${base + 14} L${x(ld.t)},${base + 6} Z`, fill: "rgba(255,255,255,.75)" }));
+      g.append(s("title", {}, `Page load: ${ld.path} at ${(ld.t / 1000).toFixed(1)} s`));
+      svg.append(g);
+    }
+    const flagged = [];
+    for (const r of v.requests) {
+      if (r.flagged) { flagged.push(r); continue; }
+      const tall = r.kind === "tracker" ? 30 : r.kind === "tracker-quiet" ? 18 : r.kind === "site" ? 14 : 20;
+      const color = r.kind === "tracker" ? "#f3c969" : r.kind === "tracker-quiet" ? "rgba(243,201,105,.5)" : r.kind === "site" ? "rgba(255,255,255,.5)" : "rgba(160,190,255,.7)";
+      const g = s("g", {});
+      g.append(s("line", { x1: x(r.t), x2: x(r.t), y1: base, y2: base - tall, stroke: color, "stroke-width": r.kind === "tracker" ? 2.5 : 1.5 }));
+      g.append(s("title", {}, `${r.method} ${r.host}${r.path}  ${r.status || ""}  at ${(r.t / 1000).toFixed(2)} s${r.tracker ? "  (tracker)" : ""}`));
+      svg.append(g);
+    }
+    flagged.forEach((r, i) => {
+      const cx = x(r.t), top = base - 62 - (i % 2) * 14;
+      const g = s("g", {});
+      g.append(s("line", { x1: cx, x2: cx, y1: base, y2: top, stroke: "#ff6159", "stroke-width": 2.5 }));
+      g.append(s("circle", { cx, cy: top, r: 6, fill: "#ff6159" }));
+      if (i === 0) {
+        const txt = `${r.flagged.value || "broke an expectation"} → ${r.host}`;
+        const right = cx > W * 0.62;
+        g.append(s("text", { x: right ? cx - 12 : cx + 12, y: top + 4, fill: "#ffb4af", "font-size": 13, "text-anchor": right ? "end" : "start", "font-family": "JetBrains Mono, ui-monospace, monospace" }, txt));
+      }
+      g.append(s("title", {}, `${r.method} ${r.host}${r.path} at ${(r.t / 1000).toFixed(2)} s: ${r.flagged.rule}`));
+      svg.append(g);
+    });
+
+    // Axis
+    const step = [1, 2, 5, 10, 15, 30, 60, 120].map((n) => n * 1000).find((n) => span / n <= 10) || 300000;
+    for (let t = 0; t <= span; t += step) {
+      svg.append(s("line", { x1: x(t), x2: x(t), y1: base + 22, y2: base + 28, stroke: "rgba(255,255,255,.3)" }));
+      svg.append(s("text", { x: x(t), y: base + 44, fill: "rgba(255,255,255,.45)", "font-size": 12, "text-anchor": "middle", "font-family": "Geist, system-ui, sans-serif" }, `${t / 1000} s`));
+    }
+
+    const note = $("note");
+    if (v.settle) {
+      const b = el("b", "", `Kane recorded only ${(v.settle.recorded / 1000).toFixed(1)} s of traffic after ${v.settle.path} loaded.`);
+      note.append(b, document.createTextNode(` Tags often send a few seconds after a page loads, and Kane records traffic inside steps, not between them, so a clean result here proves nothing. The dashed box is what had to be recorded. End the step that loads the page with "Then wait 10 seconds."`));
+    } else if (v.gaps.length) {
+      note.textContent = `Kane didn't record ${v.gaps.length === 1 ? "one stretch" : v.gaps.length + " stretches"} between steps. Statute checked that the seconds after the last page load were recorded, so the result stands.`;
+    }
+    if (v.truncated) note.append(document.createTextNode(" Only the first 2,500 requests are drawn; all of them were judged."));
+  }
+
+  document.querySelectorAll(".src[data-sample]").forEach((b) => b.addEventListener("click", () => {
+    current = { sample: b.dataset.sample };
+    setSource(b.dataset.sample);
+    $("srcnote").replaceChildren(document.createTextNode("Our demo shop's newsletter test, two real Kane runs"));
+    judge();
+  }));
+
+  async function takeFile(f) {
+    if (!f) return;
+    if (f.size > 30 * 1024 * 1024) { $("err").textContent = "That pack is larger than 30 MB."; return; }
+    fileBuf = await f.arrayBuffer();
+    fileName = f.name;
+    current = { sample: null };
+    setSource("file");
+    $("srcnote").textContent = f.name;
+    judge();
+  }
+  $("file").addEventListener("change", (e) => takeFile(e.target.files[0]));
+  $("form").addEventListener("submit", (e) => { e.preventDefault(); judge({ keepRules: true }); });
+
+  let depth = 0;
+  addEventListener("dragenter", (e) => { if ([...e.dataTransfer.types].includes("Files")) { depth++; document.body.classList.add("dragging"); } });
+  addEventListener("dragleave", () => { if (--depth <= 0) { depth = 0; document.body.classList.remove("dragging"); } });
+  addEventListener("dragover", (e) => e.preventDefault());
+  addEventListener("drop", (e) => { e.preventDefault(); depth = 0; document.body.classList.remove("dragging"); takeFile(e.dataTransfer.files[0]); });
+
+  judge();
+})();
+</script>
+</body>
+</html>

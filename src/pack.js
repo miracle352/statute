@@ -40,7 +40,11 @@ function headings(md) {
 }
 
 function read(packPath) {
-  const buf = fs.readFileSync(packPath);
+  return readBuffer(fs.readFileSync(packPath), packPath);
+}
+
+// The same, from the bytes of a pack (an upload, say).
+function readBuffer(buf, packPath = null) {
   const list = zip.entries(buf);
   const md = list.find((e) => /(^|\/)test\.md$/.test(e.name));
   const testMd = md ? text(buf, md) : null;
@@ -121,4 +125,4 @@ function expectations(md) {
   return out;
 }
 
-module.exports = { read, frontmatter, headings, expectations };
+module.exports = { read, readBuffer, frontmatter, headings, expectations };

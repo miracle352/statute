@@ -158,7 +158,7 @@ function leaks(pack, values) {
     try { hay += " " + decodeURIComponent(r.url).toLowerCase(); } catch {}
     for (const v of values) {
       const hit = forms(v).find((f) => hay.includes(f.needle));
-      if (hit) { found.push({ host, url: short(r.url), how: hit.how, value: v }); break; }
+      if (hit) { found.push({ host, url: short(r.url), time: r.iso, how: hit.how, value: v }); break; }
     }
   }
   return { home, found };
@@ -369,4 +369,4 @@ function judge(pack, lines) {
   return { verdict, why, kaneStatus: pack.kaneStatus, results, site: homeSite(pack) };
 }
 
-module.exports = { parse, judge, judgeRule, RULES, site, forms, typedValues, money, settle };
+module.exports = { parse, judge, judgeRule, RULES, site, forms, typedValues, money, settle, coverage, homeSite, trackerHit, hostOf, SETTLE_MS };

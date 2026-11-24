@@ -31,7 +31,7 @@ function read(buf, entry) {
   const start = p + 30 + buf.readUInt16LE(p + 26) + buf.readUInt16LE(p + 28);
   const data = buf.subarray(start, start + entry.compSize);
   if (entry.method === 0) return data;
-  if (entry.method === 8) return zlib.inflateRawSync(data);
+  if (entry.method === 8) return zlib.inflateRawSync(data, { maxOutputLength: 256 * 1024 * 1024 });
   throw new Error(`unsupported compression ${entry.method} in ${entry.name}`);
 }
 

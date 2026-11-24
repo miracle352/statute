@@ -1,6 +1,6 @@
 {
   "name": "@miracle352/statute",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Kane CLI says the steps ran. Statute checks what the page did: trackers after Reject, typed data leaving the site, consumer-law checks. Code, not a model, judges Kane's evidence.",
   "bin": {
     "statute": "bin/statute.js",

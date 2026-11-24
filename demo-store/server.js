@@ -50,6 +50,7 @@ const card = (p) => `<article class="card">
 </article>`;
 
 const lamp = PRODUCTS[0];
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const routes = {
   "/": () =>
@@ -60,6 +61,8 @@ const routes = {
   <img src="${BASE}/img/hero.jpg" alt="A folded white pendant lamp glowing in a dark room" width="1400" height="894">
 </div></section>
 <section class="wrap" id="shop"><h2>Best sellers</h2><div class="grid">${PRODUCTS.map(card).join("")}</div></section>
+<section class="wrap news"><div><h2>Lighting notes</h2><p>One email a month: new lamps and how to light a room well.</p></div>
+<form action="${BASE}/newsletter" method="get" class="news-form"><label>Email <input type="email" name="email" required autocomplete="email"></label><button class="btn">Sign up</button></form></section>
 <section class="wrap plus"><div><h2>Lumen Plus</h2><p>Free bulbs for life and early access to new lamps. €9.00 a month, renews automatically.</p></div><a class="btn btn-lg" href="${BASE}/subscribe">Subscribe</a></section>`),
 
   "/cart": () =>
@@ -74,6 +77,12 @@ const routes = {
 <div class="line"><span>Service fee</span><span class="price">${eur(SERVICE_FEE)}</span></div>
 <p class="total">Total to pay <strong class="price">${eur(lamp.price + SERVICE_FEE)}</strong></p>
 <button class="btn btn-lg">Pay now</button></section>`),
+
+  // Newsletter: the form sends the address in the page URL, so every tag on the
+  // thank-you page reports it along with the page address (privacy bug).
+  "/newsletter": (url) =>
+    page("Thanks", `<section class="wrap narrow"><h1>You're on the list</h1><p class="lead">Thanks. We'll write to ${esc(url.searchParams.get("email") || "you")} once a month.</p>
+<a class="btn" href="${BASE}/">Back to the shop</a></section>`),
 
   // Subscribing takes one click.
   "/subscribe": () =>
@@ -124,7 +133,7 @@ function handler(req, res) {
     const route = prod ? () => productPage(prod) : routes[url.pathname];
     if (route) {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      return res.end(route());
+      return res.end(route(url));
     }
     const file = path.join(PUB, path.normalize(url.pathname).replace(/^([/\\])+/, ""));
     if (file.startsWith(PUB) && fs.existsSync(file) && fs.statSync(file).isFile()) {

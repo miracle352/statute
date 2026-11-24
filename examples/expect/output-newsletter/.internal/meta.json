@@ -1,0 +1,39 @@
+{
+  "commit_id": "33c15cbf-5f44-4550-9e6f-40280c2f5259",
+  "test_id": "57d1c6a1-2e20-4fb6-a724-cf56fee4e7ac",
+  "testcase_id": "01M86JJRC91DAZ12E99EWTYCC7",
+  "project_id": "01M7E4JR87M8V8X3PY5SPEP2E6",
+  "folder_id": "01M7E4K3PV0XT2AA4SK3Q4728E",
+  "org_id": "3430257",
+  "session_name": "newsletter",
+  "executions": [
+    {
+      "execution_id": "d72d1259-0845-42e6-b7a2-8b045882e17f",
+      "run_kind": "author",
+      "status": "passed",
+      "valid": true,
+      "at": "2026-11-24T11:06:59.860Z"
+    },
+    {
+      "execution_id": "5aeb421a-4d9f-482e-8105-06cc5afc67f9",
+      "run_kind": "replay",
+      "status": "passed",
+      "valid": true,
+      "at": "2026-11-24T11:10:59.800Z"
+    },
+    {
+      "execution_id": "62584c7f-649d-436f-ae31-acabc924561c",
+      "run_kind": "replay",
+      "status": "passed",
+      "valid": true,
+      "at": "2026-11-24T11:13:50.164Z"
+    },
+    {
+      "execution_id": "677a8f25-1cd7-41f7-8686-7961e64d58ad",
+      "run_kind": "replay",
+      "status": "passed",
+      "valid": true,
+      "at": "2026-11-24T11:17:51.665Z"
+    }
+  ]
+}

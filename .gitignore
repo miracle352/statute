@@ -14,3 +14,4 @@ _lumen/
 _pr2/
 laws/output-*/
 vars.json
+*.verdicts/

@@ -23,7 +23,7 @@ function prompt({ pack, reportMd, appDir }) {
 }
 
 // Runs `claude -p` with the prompt on stdin. Returns Claude's final text.
-function fix({ pack, reportMd, appDir, onLine }) {
+function fix({ pack, reportMd, appDir, onLine, text }) {
   return new Promise((resolve, reject) => {
     const cmd = "claude -p --permission-mode acceptEdits --allowedTools Read,Edit,Write,Glob,Grep \"Bash(node --check:*)\"";
     const child = spawn(cmd, { cwd: appDir, shell: true, stdio: ["pipe", "pipe", "pipe"] });
@@ -36,11 +36,35 @@ function fix({ pack, reportMd, appDir, onLine }) {
     child.stderr.on("data", (d) => (err += d));
     child.on("error", reject);
     child.on("close", (code) => {
-      if (code !== 0 && !out.trim()) return reject(new Error(`claude exited with ${code}: ${err.slice(-1500)}`));
+      const said = (out + "\n" + err).trim();
+      // A failed sign-in or a crash is not a fix, whatever Claude printed.
+      if (code !== 0 || /failed to authenticate|not logged in|invalid api key|please run .?claude (auth )?login|credit balance is too low/i.test(said)) {
+        return reject(new Error(`Claude Code did not run (exit ${code}): ${said.slice(-600)}`));
+      }
       resolve(out.trim());
     });
-    child.stdin.end(prompt({ pack, reportMd, appDir }));
+    child.stdin.end(text || prompt({ pack, reportMd, appDir }));
   });
 }
 
-module.exports = { fix, prompt };
+// For test files with expectations: the broken expectations are the brief.
+function promptExpect({ reportMd, appDir, testName }) {
+  return [
+    `Statute ran the Kane CLI test "${testName}" against this app. Kane's steps ran, but the page broke expectations that Statute checked in Kane's recorded evidence (network traffic, cookies, console, values).`,
+    "",
+    "Fix the app's source code so every expectation holds. Requirements:",
+    "- Work only inside the current folder (the app). Do not touch the test file or any statute-report files.",
+    "- Fix the root cause, keep the feature working: the same steps must still succeed for a real user.",
+    "- Do not switch off analytics or other features to make a rule pass unless the rule asks for that.",
+    "- You may run `node --check <file>` to syntax-check JavaScript you changed.",
+    "- When you are done, reply with two short lines: what was wrong, what you changed.",
+    "",
+    `App folder: ${appDir}`,
+    "",
+    "Statute's report:",
+    "",
+    reportMd,
+  ].join("\n");
+}
+
+module.exports = { fix, prompt, promptExpect };

@@ -234,4 +234,4 @@ const fixHint =
   "choice on every page load, before any tag script is added. Keep the tags working after Accept. " +
   "If the site has no way to refuse yet, add a small banner with Accept and Decline buttons.";
 
-module.exports = { id, title, rule, laws, objective, judge, fixHint, matchDomain, visitorId, cleanLabel, actionText };
+module.exports = { id, title, rule, laws, objective, judge, fixHint, matchDomain, visitorId, consentModeDenied, cleanLabel, actionText };

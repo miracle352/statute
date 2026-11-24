@@ -121,4 +121,4 @@ function available() {
   try { execSync(process.platform === "win32" ? "where kane-cli" : "command -v kane-cli", { stdio: "ignore" }); return true; } catch { return false; }
 }
 
-module.exports = { available, run, cloudEndpoint };
+module.exports = { available, run, cloudEndpoint, collect, binary: findKane };

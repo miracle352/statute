@@ -15,6 +15,13 @@ inputs:
       auto reads the pull request diff and runs only the checks the change could affect
       (needs actions/checkout with fetch-depth 0). A change that touches none of them runs nothing and costs no Kane credits.
     default: consent
+  tests:
+    description: >
+      Kane CLI test files with expectations to run as well, for example `tests/kane/*_test.md`
+      (separate several patterns with spaces). Each test's expectations (in a comment Kane ignores)
+      are checked against what Kane recorded: requests, data leaving the site, cookies, errors, numbers.
+      With check auto, they run only when the pull request changes code (not only docs).
+    default: ""
   start:
     description: Optional command that starts your app on the runner before Kane visits (for example `npm start`).
     default: ""
@@ -80,6 +87,7 @@ runs:
       shell: bash
       env:
         STATUTE_CHECK: ${{ inputs.check }}
+        STATUTE_TESTS: ${{ inputs.tests }}
         BASE_SHA: ${{ github.event.pull_request.base.sha }}
         HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         LT_USERNAME: ${{ inputs.lt-username }}
@@ -109,8 +117,22 @@ runs:
             checks="consent price cancel"
           fi
         fi
+        tests=""
+        if [ -n "$STATUTE_TESTS" ]; then
+          shopt -s nullglob globstar
+          for pat in $STATUTE_TESTS; do for f in $pat; do
+            grep -qi '<!--[[:space:]]*expect' "$f" && tests="$tests $f" || echo "::warning title=Statute::$f has no expectations (<!-- expect ... -->), skipped."
+          done; done
+          if [ "$STATUTE_CHECK" = "auto" ] && [ -f "$RUNNER_TEMP/statute-scope.json" ]; then
+            code_changed=$(node -e 'console.log(require(process.argv[1]).changed.length)' "$RUNNER_TEMP/statute-scope.json")
+            if [ "$code_changed" = 0 ]; then tests=""; echo "Only docs changed, so the Kane tests were not run."; fi
+          fi
+        fi
+        tests="${tests# }"
+        echo "tests=$tests" >> "$GITHUB_OUTPUT"
+        [ -n "$tests" ] && [ -z "$checks" ] && checks="none"
         echo "checks=$checks" >> "$GITHUB_OUTPUT"
-        echo "Checks to run: ${checks:-none}"
+        echo "Checks to run: ${checks:-none}${tests:+; Kane tests: $tests}"
 
     - name: Install Kane CLI
       if: steps.plan.outputs.checks != ''
@@ -130,6 +152,7 @@ runs:
         LT_USERNAME: ${{ inputs.lt-username }}
         LT_ACCESS_KEY: ${{ inputs.lt-access-key }}
         STATUTE_CHECKS: ${{ steps.plan.outputs.checks }}
+        STATUTE_TEST_FILES: ${{ steps.plan.outputs.tests }}
         STATUTE_NOCREDS: ${{ steps.plan.outputs.nocreds }}
         STATUTE_URL: ${{ inputs.url }}
         STATUTE_START: ${{ inputs.start }}
@@ -162,6 +185,7 @@ runs:
         fi
         worst=pass
         fixed=""
+        [ "$STATUTE_CHECKS" = none ] && STATUTE_CHECKS=""
         for c in $STATUTE_CHECKS; do
           dir="$out"
           if [ "$STATUTE_FIX" = 1 ]; then
@@ -184,6 +208,20 @@ runs:
             why=$(node -e 'const r=require(process.argv[1]).reasons[process.argv[2]]||[];console.log(r.slice(0,3).map(x=>"`"+x.file+"` ("+x.why+": `"+x.line.replace(/`/g,"").slice(0,60)+"`)").join(", "))' "$RUNNER_TEMP/statute-scope.json" "$c")
             [ -n "$why" ] && printf '\n_Statute ran this check because the change touches %s._\n' "$why" >> "$summary"
           fi
+          printf '\n\n' >> "$summary"
+        done
+        for t in $STATUTE_TEST_FILES; do
+          name=$(basename "$t" .md); dir="$out/expect-$name"; mkdir -p "$dir"
+          args=(expect "$t" --url "$STATUTE_URL" --out "$dir")
+          if [ -n "$STATUTE_START" ]; then args+=(--start "$STATUTE_START"); fi
+          if [ "$STATUTE_FIX" = 1 ]; then args+=(--fix --app "$STATUTE_APP" --rounds "$STATUTE_ROUNDS"); fi
+          node "$GITHUB_ACTION_PATH/bin/statute.js" "${args[@]}" 2>&1 | tee -a "$RUNNER_TEMP/statute.log"
+          code=${PIPESTATUS[0]}
+          case $code in 0) v=pass ;; 1) v=violation ;; *) v=inconclusive ;; esac
+          if [ "$STATUTE_FIX" = 1 ] && [ "$code" = 0 ] && grep -q '"agent"' "$dir/expect-loop.json" 2>/dev/null; then fixed="$fixed $name"; fi
+          if [ "$v" = violation ]; then worst=violation; elif [ "$v" = inconclusive ] && [ "$worst" = pass ]; then worst=inconclusive; fi
+          if [ -f "$dir/expect.md" ]; then sed '1s/^\xEF\xBB\xBF//' "$dir/expect.md" >> "$summary"
+          else echo "Statute could not finish the Kane test **$t**. See the job log." >> "$summary"; fi
           printf '\n\n' >> "$summary"
         done
         echo "verdict=$worst" >> "$GITHUB_OUTPUT"

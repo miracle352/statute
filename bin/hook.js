@@ -9,6 +9,8 @@
 //
 // statute.json in your project says what to check:
 //   { "check": "consent", "url": "http://localhost:3000/", "start": "npm run dev", "rounds": 3 }
+// and, optionally, Kane test files whose expectations must hold:
+//   "tests": ["tests/kane/newsletter_test.md"]
 const { spawnSync } = require("child_process");
 const fs = require("fs");
 const os = require("os");
@@ -25,7 +27,8 @@ function main() {
   const cwd = input.cwd || process.cwd();
   let cfg;
   try { cfg = JSON.parse(fs.readFileSync(path.join(cwd, "statute.json"), "utf8")); } catch { process.exit(0); } // not set up here: stay out of the way
-  const checks = [].concat(cfg.check || "consent");
+  const tests = [].concat(cfg.tests || []);
+  const checks = [].concat(cfg.check || (tests.length ? [] : "consent"));
   const rounds = Number(cfg.rounds || 3);
 
   // Count rounds per session so a fix that never passes cannot loop forever.
@@ -53,10 +56,23 @@ function main() {
     }
   }
 
+  for (const t of tests) {
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), "statute-hook-"));
+    const args = [path.join(ROOT, "bin", "statute.js"), "expect", t, "--url", cfg.url, "--out", out];
+    if (cfg.start) args.push("--start", cfg.start);
+    const r = spawnSync(process.execPath, args, { cwd, env: process.env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    process.stderr.write(r.stdout || "");
+    if (r.status === 1) {
+      let report = "";
+      try { report = fs.readFileSync(path.join(out, "expect.md"), "utf8").replace(/^\uFEFF/, ""); } catch {}
+      failures.push(report || `The Kane test ${t} broke its expectations.`);
+    }
+  }
+
   if (!failures.length) { fs.rmSync(state, { force: true }); process.exit(0); }
   fs.writeFileSync(state, JSON.stringify({ n: n + 1 }));
   const reason =
-    `Statute (Kane CLI) checked ${cfg.url} in a real browser and found a violation (round ${n + 1} of ${rounds}). ` +
+    `Statute (Kane CLI) checked ${cfg.url} in a real browser and found a violation or a broken expectation (round ${n + 1} of ${rounds}). ` +
     `Fix it in the code, then finish again; Kane will re-check.\n\n` + failures.join("\n\n---\n\n");
   process.stdout.write(JSON.stringify({ decision: "block", reason }));
   process.exit(0);

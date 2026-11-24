@@ -41,6 +41,25 @@ const TOOLS = [
     },
   },
   {
+    name: "statute_expect",
+    description:
+      "Run a Kane CLI test file (<name>_test.md) and check what the page did while Kane ran it: requests to trackers " +
+      "or third parties, data typed by the user leaving the site (plain, encoded or hashed), cookies, server and console " +
+      "errors, numbers Kane read, clicks per step. The expectations are written in the test file in a comment " +
+      "(<!-- expect ... -->). Kane's own pass only says the steps ran; this says whether the page behaved. Spends Kane credits. " +
+      "Also judges an existing .evidence pack again for free when `test` is a pack path.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        test: { type: "string", description: "Path to a *_test.md file with expectations, or to a sealed .evidence pack." },
+        url: { type: "string", description: "Address the test starts at (needed for a test file)." },
+        start: { type: "string", description: "Optional command that starts the app first." },
+        cwd: { type: "string", description: "Folder to run in. Defaults to the agent's folder." },
+      },
+      required: ["test"],
+    },
+  },
+  {
     name: "statute_rules",
     description: "List Statute's checks with the rule each one enforces and the laws behind it. Instant, no credits.",
     inputSchema: { type: "object", properties: {} },
@@ -78,6 +97,27 @@ function runCheck({ check, url, start, cwd }) {
   });
 }
 
+function runExpect({ test, url, start, cwd }) {
+  return new Promise((resolve) => {
+    const isPack = /\.evidence$/i.test(test || "");
+    if (!isPack && !/^https?:\/\//i.test(url || "")) return resolve({ text: "url (http:// or https://) is needed to run a test file", isError: true });
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), "statute-mcp-"));
+    const args = [path.join(ROOT, "bin", "statute.js"), "expect", test, "--out", out];
+    if (!isPack) args.push("--url", url);
+    if (start && !isPack) args.push("--start", start);
+    const child = spawn(process.execPath, args, { cwd: cwd || process.cwd(), env: process.env, stdio: ["ignore", "pipe", "pipe"] });
+    let log = "";
+    child.stdout.on("data", (d) => { log += d; process.stderr.write(d); });
+    child.stderr.on("data", (d) => { log += d; process.stderr.write(d); });
+    child.on("close", (code) => {
+      let report = "";
+      try { report = fs.readFileSync(path.join(out, "expect.md"), "utf8").replace(/^\uFEFF/, ""); } catch {}
+      const tail = log.trim().split("\n").slice(-8).join("\n");
+      resolve({ text: report || `Statute could not finish (exit ${code}).\n\n${tail}`, isError: !report });
+    });
+  });
+}
+
 // --- MCP over stdio: newline-delimited JSON-RPC 2.0 ---
 const send = (msg) => process.stdout.write(JSON.stringify({ jsonrpc: "2.0", ...msg }) + "\n");
 
@@ -96,6 +136,10 @@ async function handle(msg) {
     const name = params && params.name;
     const a = (params && params.arguments) || {};
     if (name === "statute_rules") return send({ id, result: { content: [{ type: "text", text: rulesText() }] } });
+    if (name === "statute_expect") {
+      const r = await runExpect(a);
+      return send({ id, result: { content: [{ type: "text", text: r.text }], isError: !!r.isError } });
+    }
     if (name === "statute_check") {
       const r = await runCheck(a);
       return send({ id, result: { content: [{ type: "text", text: r.text }], isError: !!r.isError } });

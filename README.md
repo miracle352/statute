@@ -6,7 +6,9 @@
 
 Ask Claude Code to "add Google Analytics" and it will usually add a cookie banner too, and tell you cookies are "only set if you accept". Is that true? Paste Google's own tag the way its setup page says, and analytics fires before anyone is asked. Either way the site works and every functional test passes, and nobody has checked the one thing the law cares about. Statute is the check your agent can't skip: Kane CLI opens your app in a real Chrome, clicks Reject, reads the checkout, tries to cancel, and records everything. Code, not a model, judges Kane's sealed evidence against the law. On a violation the report goes back to your agent, and Kane returns to prove the fix. A fix only counts when Kane says so.
 
-There are no tests to write. The laws are the tests: consent (GDPR and ePrivacy), drip pricing (California SB 478, UK DMCC Act, EU Consumer Rights Directive) and click-to-cancel. It runs on every pull request that could break one, and on your live site every night. The same checks found 7 of 15 big European sites tracking visitors without consent.
+**And for any Kane test, not just the laws: Kane says the steps ran; Statute says what the page did.** Write a few expectations in a Kane test file ("what was typed in *Sign up* never leaves this site", "no request to a tracker after *Refuse cookies*", "no server errors") and Statute checks them against Kane's sealed evidence: every request, cookie, console message and value Kane recorded, across steps, with plain code. See [Expectations for any Kane test](#expectations-for-any-kane-test).
+
+There are no tests to write for the laws. The laws are the tests: consent (GDPR and ePrivacy), drip pricing (California SB 478, UK DMCC Act, EU Consumer Rights Directive) and click-to-cancel. It runs on every pull request that could break one, and on your live site every night. The same checks found 7 of 15 big European sites tracking visitors without consent.
 
 **Watch the whole loop on a real pull request:** [statute-production.up.railway.app/loop.html](https://statute-production.up.railway.app/loop.html)
 
@@ -30,7 +32,7 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | **Bar 2: Kane caught or proved something** | On strangers' live sites: [7 of 15 big European sites](https://statute-production.up.railway.app/#census) tracked visitors without consent; [cruisinginthewake.com](https://statute-production.up.railway.app/cases/in-the-wake.html) tracks before any choice; [HAXCMS](https://statute-production.up.railway.app/cases/haxcms.html) loaded Analytics with no way to refuse |
 | **Bar 3: agent and Kane talk to each other** | [miracle352/lumen#2](https://github.com/miracle352/lumen/pull/2): Kane's report went to Claude Code, which fixed the code and said "I haven't re-run Kane"; Kane then proved Decline and Accept, and Statute pushed the fix to the pull request |
 | **Ships** | A [live site](https://statute-production.up.railway.app) that audits your URL, a [GitHub Action](#use-it-in-ci) with `npx github:miracle352/statute init`, a nightly production watch, a Claude Code hook and [agent skill](skill/statute/SKILL.md), an MCP server, and the laws as [Kane CLI test files](laws/) |
-| **Verified** | Verdicts are code over Kane's sealed evidence, never a model's opinion. 44 tests, including a golden test that re-judges 14 real recorded Kane runs on every commit. A check that can't prove anything says so ("not judged") instead of passing |
+| **Verified** | Verdicts are code over Kane's sealed evidence, never a model's opinion. 64 tests, including a golden test that re-judges 16 real recorded Kane runs on every commit. A check that can't prove anything says so ("not judged") instead of passing |
 | **Closed loop** | Three places: in CI (the Action fixes and pushes only what Kane passed), in Claude Code (its Stop hook won't let the agent finish until Kane passes), and live on the [loop page](https://statute-production.up.railway.app/loop.html) |
 | **Craft** | No tests to write: the laws are the tests. One command to add it to a repo. A pull request that touches only styles or docs costs 0 credits. Kane's screenshots right in the PR comment |
 
@@ -48,11 +50,12 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | 1 min | Kane inside Claude Code: the agent's "done" blocked until the law holds, in a real session | [Screenshots](#put-kane-inside-your-agent) |
 | 1 min | The GitHub Action commenting a violation on a real pull request, and skipping the PRs that can't break a law | [The PR](https://github.com/miracle352/statute/pulls?q=is%3Apr+%22Test+the+Statute+action%22) · [how](#on-pull-requests-only-when-it-matters) |
 | 1 min | The nightly watch: Kane checks the live site, opens an issue on a violation, closes it once fixed | [Watch issue](https://github.com/miracle352/statute/issues?q=label%3Astatute) · [how](#on-the-live-site-every-night) |
+| 1 min | **Kane passed; the page still leaked.** A newsletter test passes in Kane while the visitor's email goes to Google Analytics. Statute catches it from the same evidence, Claude Code fixes it, Kane and Statute prove the fix | [Expectations](#expectations-for-any-kane-test) · `npx github:miracle352/statute replay newsletter-expect` |
 | 1 min | Run it yourself with no Kane credits and no login | `npx github:miracle352/statute demo` |
 | 2 min | Add it to your repo: every pull request, plus production every night | `npx github:miracle352/statute init --fix --live https://your-site.com` |
 | 10 min | Run the whole loop on your machine (Kane CLI and Claude Code needed, about 31 credits) | `npm run demo:fix` |
 
-`demo` needs only Node 22. It re-judges six recorded runs (Lumen PR #2 from GitHub Actions, the Kane test file on the demo shop, the demo shop's Reject, price and cancel checks, and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
+`demo` needs only Node 22. It re-judges seven recorded runs (Lumen PR #2 from GitHub Actions, the Kane test file on the demo shop, the demo shop's Reject, price and cancel checks, the newsletter expectations, and HAXCMS) from their sealed Kane evidence packs in `replays/` and rebuilds each case file in `statute-report/replay/`. Nothing is sent to Kane.
 
 ## The checks
 
@@ -69,6 +72,57 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 2. **Code judges.** `src/packs/consent.js` reads the pack. It finds the moment of the Reject click in Kane's action log, splits every request into before and after that moment, and matches hosts against a tracker list (`rules/trackers.json`). It pulls Google Analytics client IDs out of `/g/collect` hits, so "the same visitor ID went out after Reject" is a fact from the traffic, not a guess. Two things are shown but not counted: Google Consent Mode hits that say consent was denied, and Google Tag Manager's own code loading with no measurement hit.
 3. **Your agent fixes.** `statute fix` hands the report, the rule and the law to Claude Code (`claude -p`, edit tools only, working in your app's folder). It restarts your app and sends Kane back.
 4. **Kane proves.** The loop stops when Reject passes *and* Accept still loads the tags, or after three rounds. The case file shows every round with Kane's screenshots and share links.
+
+## Expectations for any Kane test
+
+Kane's verdict answers "did the steps run?". Kane can also assert on network traffic inside one step, in plain English, and `kane-cli evidence verdict` judges a pack's results against a policy. What nothing checks is the page's behaviour across the whole visit: which hosts got the email the visitor typed two steps earlier, whether a tracker fired at any point after a refusal, whether a request failed behind a page that looks fine. Kane records all of that in the evidence pack anyway. Statute reads it, with code, after the run.
+
+Write the expectations in your Kane test file, inside a comment Kane ignores:
+
+```markdown
+# Lumen: the newsletter keeps the email address private
+
+<!-- expect
+- text "jane.doe@example.com" never leaves this site
+- what was typed in "Sign up for the newsletter" never leaves this site
+- no server errors
+- no failed requests to this site
+-->
+
+## Accept cookies
+Go to {{url}}. In the cookie banner, click Accept all.
+
+## Sign up for the newsletter
+Type jane.doe@example.com into the newsletter email field and click Sign up. Then wait 10 seconds, so the page's tags have time to send.
+
+## Confirmation
+Verify the page says the visitor is on the list.
+```
+
+```bash
+npx github:miracle352/statute expect examples/expect/newsletter_test.md --url http://localhost:4173/ --start "node demo-store/server.js"
+# and the loop: Claude Code fixes what broke, Kane runs the test again
+npx github:miracle352/statute expect examples/expect/newsletter_test.md --url http://localhost:4173/ --start "node demo-store/server.js" --fix --app demo-store
+# judge any sealed pack again, no credits
+npx github:miracle352/statute expect .testmuai/evidence/<run>.evidence
+```
+
+| Rule | What it catches |
+|---|---|
+**A recorded run.** On our demo shop, the newsletter form sends the address in the page URL, and Google Analytics copies the URL into its hit. Kane ran the test above and **passed** it: every step worked. Statute read the same pack and found `jane.doe@example.com` in a request to `www.google-analytics.com`. Claude Code got the report and changed the form to POST and gated the tags on consent; Kane ran the test again and passed, and this time Statute agreed: the hit went out without the address. Both sealed packs are in [`replays/newsletter-expect/`](replays/newsletter-expect/), and `npx github:miracle352/statute replay newsletter-expect` judges them again with no credits.
+
+| `no request to a tracker` / `a third party` / `<host>` `[after\|before\|during "<step>"]` | tags that fire after a refusal, calls to hosts you didn't expect |
+| `no visitor ID sent to a tracker [...]` | Google Analytics client IDs, Meta browser IDs, click IDs in tracker hits |
+| `no tracker cookie [...]` | `_ga`, `_fbp` and other tracker cookies set or sent |
+| `what was typed in "<step>" never leaves this site` | PII sent to another host as typed, URL-encoded, Base64 or SHA-256 hashed (the way ad pixels "match" emails) |
+| `text "<value>" never leaves this site`, `value of $<variable> never leaves this site` | the same, for a fixed value or one Kane read from the page |
+| `no server errors`, `no failed requests to this site`, `no console errors` | failures behind a page that looks fine (favicon noise ignored) |
+| `value $<a> equals \| is at most \| is at least $<b> [plus $<c>]` | numbers Kane stored, compared exactly: price shown against total charged |
+| `clicks in "<step>" at most clicks in "<step>" [plus <n>]` | effort: cancelling against subscribing |
+
+Steps are your test's `## headings`; "after" and "before" are measured from the last thing Kane did in that step. A rule Statute can't check from the evidence (a missing step, an unknown rule, no network log) is reported as *not checked*, never as a pass. Kane records network traffic while a step runs, not in the gaps between steps, so a tag that fires a few seconds after a page loads can fall into a gap and go unrecorded; a fast replay from Kane's step cache makes this more likely. Statute checks for it: unless Kane recorded at least 6 seconds of traffic after the last page load, a clean network result is reported as *not checked*, with the fix (end the step that loads the page with a wait). Exit codes are 0, 1 and 3, and a verdict in Kane's own format (the `evidence-cli` verdict schema that `kane-cli evidence verdict` writes) is saved next to the pack as `<pack>.verdicts/statute.verdict.json`.
+
+It works everywhere the laws do: `tests:` in the GitHub Action, `"tests": [...]` in `statute.json` for the Claude Code hook, and a `statute_expect` tool in the MCP server.
 
 ## Use it with Kane CLI directly
 
@@ -220,8 +274,8 @@ Guard rails: public `http`/`https` sites only (private, internal and metadata ad
 Node 22, [Kane CLI](https://www.npmjs.com/package/@testmuai/kane-cli) (`npm i -g @testmuai/kane-cli && kane-cli login`), and Claude Code for the fix loop. No npm install: Statute has no dependencies.
 
     npm run demo              replay recorded runs, no credits
-    npm test                  44 tests: every judge, the diff check, and a golden test that
-                              re-judges the 14 recorded Kane runs and fails if a verdict changes
+    npm test                  64 tests: every judge, the diff check, and a golden test that
+                              re-judges the 16 recorded Kane runs and fails if a verdict changes
     npm start                 the site on http://localhost:8080, live audits included
     npm run check:consent     one Reject check on the demo shop
     npm run demo:fix          find, fix and prove on the demo shop
@@ -250,7 +304,7 @@ To host it: the `Dockerfile` installs Chrome and Kane CLI. Set `LT_USERNAME` and
     bin/shots.js         pulls Kane's key screenshots out of the evidence for PR comments
     laws/                the three laws as Kane CLI test files (kane-cli testmd run)
     skill/statute/       the agent skill (statute skill)
-    test/                44 tests, including a golden test over 14 recorded Kane runs
+    test/                64 tests, including a golden test over 16 recorded Kane runs
     bin/census.js        the Census runner, --rejudge
     server/              the live site, audit queue, Chrome and its live view
     demo-store/          Lumen, a shop with deliberate compliance bugs

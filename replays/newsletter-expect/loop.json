@@ -1,0 +1,99 @@
+{
+  "title": "Kane CLI test examples/expect/newsletter_test.md on the Lumen demo shop: Kane passed, Statute found the email leak, Claude Code fixed it, Kane and Statute proved the fix",
+  "pack": "expect",
+  "test": "examples/expect/newsletter_test.md",
+  "url": "http://localhost:4173/",
+  "source": "statute expect examples/expect/newsletter_test.md --url http://localhost:4173/ --fix --app demo-store (real Kane CLI 0.10.8 runs and a real Claude Code fix, on a local copy of the demo shop)",
+  "timeline": [
+    {
+      "round": 1,
+      "step": "kane",
+      "verdict": "violation",
+      "why": "2 expectations broken: text \"jane.doe@example.com\" never leaves this site; what was typed in \"Sign up for the newsletter\" never leaves this site.",
+      "kaneStatus": "passed",
+      "evidence": "evidence/newsletter_test-round1-1795518837738.evidence",
+      "results": [
+        {
+          "rule": "text \"jane.doe@example.com\" never leaves this site",
+          "status": "fail",
+          "detail": "the value reached www.google-analytics.com (URL-encoded)",
+          "evidence": [
+            {
+              "host": "www.google-analytics.com",
+              "url": "www.google-analytics.com/g/collect",
+              "how": "URL-encoded",
+              "value": "jane.doe@example.com"
+            }
+          ]
+        },
+        {
+          "rule": "what was typed in \"Sign up for the newsletter\" never leaves this site",
+          "status": "fail",
+          "detail": "what was typed in \"Sign up for the newsletter\" reached 1 other host: www.google-analytics.com (URL-encoded)",
+          "evidence": [
+            {
+              "host": "www.google-analytics.com",
+              "url": "www.google-analytics.com/g/collect",
+              "how": "URL-encoded",
+              "value": "jane.doe@example.com"
+            }
+          ]
+        },
+        {
+          "rule": "no server errors",
+          "status": "pass",
+          "detail": "no 5xx in 19 requests"
+        },
+        {
+          "rule": "no failed requests to this site",
+          "status": "pass",
+          "detail": "every request to localhost succeeded"
+        }
+      ],
+      "at": "2026-11-24T11:13:57.766Z"
+    },
+    {
+      "round": 1,
+      "step": "agent",
+      "agent": "claude-code",
+      "summary": "What was wrong: `tags.js` loaded Google Analytics and the Meta pixel on every page as soon as it loaded, before the visitor chose anything and even after \"Reject all\". The banner only saved the choice and hid itself.\n\nWhat I changed: `public/tags.js` now reads the consent cookie on every page and adds the tags only when it says \"accepted\". `public/consent.js` loads them right away when someone clicks \"Accept all\", so analytics still works after Accept. Both files pass `node --check`; I haven't run it in a browser, so Kane's re-check will confirm it.",
+      "changed": [
+        "public/consent.js",
+        "public/tags.js",
+        "server.js"
+      ],
+      "at": "2026-11-24T11:17:08.202Z"
+    },
+    {
+      "round": 2,
+      "step": "kane",
+      "verdict": "pass",
+      "why": "All 4 expectations held.",
+      "kaneStatus": "passed",
+      "evidence": "evidence/newsletter_test-round2-1795519079029.evidence",
+      "results": [
+        {
+          "rule": "text \"jane.doe@example.com\" never leaves this site",
+          "status": "pass",
+          "detail": "the value stayed on localhost"
+        },
+        {
+          "rule": "what was typed in \"Sign up for the newsletter\" never leaves this site",
+          "status": "pass",
+          "detail": "1 typed value stayed on localhost"
+        },
+        {
+          "rule": "no server errors",
+          "status": "pass",
+          "detail": "no 5xx in 19 requests"
+        },
+        {
+          "rule": "no failed requests to this site",
+          "status": "pass",
+          "detail": "every request to localhost succeeded"
+        }
+      ],
+      "at": "2026-11-24T11:17:59.045Z"
+    }
+  ]
+}

@@ -182,6 +182,7 @@ function replay(only) {
     fs.cpSync(path.join(src, "evidence"), path.join(out, "evidence"), { recursive: true });
     const loop = JSON.parse(fs.readFileSync(path.join(src, "loop.json"), "utf8"));
     console.log(`\n${loop.title || name}`);
+    if (loop.pack === "expect") { replayExpect(src, loop, out); continue; }
     for (const t of loop.timeline) {
       if (t.step === "agent") { console.log(`  round ${t.round}  Claude Code changed the app`); continue; }
       const pk = PACKS[t.pack];
@@ -196,6 +197,24 @@ function replay(only) {
     console.log(`  case file: ${path.join(out, "index.html")}`);
   }
   console.log("\nNo Kane runs and no credits: every verdict above was recomputed from the sealed evidence packs in replays/.");
+}
+
+// Expectation runs: re-judge each round's pack against the expectations in its own test.md.
+function replayExpect(src, loop, out) {
+  const pack = require("../src/pack");
+  const expect = require("../src/expect");
+  const cli = require("../src/expect-cli");
+  for (const t of loop.timeline) {
+    if (t.step === "agent") { console.log(`  round ${t.round}  Claude Code changed ${(t.changed || []).join(", ") || "the app"}`); continue; }
+    const f = String(t.evidence || "").split(/[\\/]/).pop();
+    const file = path.join(out, "evidence", f);
+    if (!f || !fs.existsSync(file)) continue;
+    const p = pack.read(file);
+    const r = expect.judge(p, p.expectations);
+    console.log(`  round ${t.round}  Kane: ${String(r.kaneStatus).padEnd(8)} Statute: ${r.verdict.toUpperCase().padEnd(12)} ${r.why}`);
+    cli.writeVerdict(file, p.expectations, r);
+  }
+  console.log(`  verdicts: ${path.join(out, "evidence")} (*.verdicts/statute.verdict.json)`);
 }
 
 function resetDemo() {
@@ -266,6 +285,8 @@ Code, not a model, decides the verdict. Run any command with npx github:miracle3
                                   Kane finds it, Claude Code fixes it, Kane proves the fix
   init [--fix] [--live <url>]     add the GitHub workflows: every pull request, and production every night
   judge <check> --latest          judge the newest sealed Kane pack (for example after kane-cli testmd run laws/...)
+  expect <name>_test.md --url <u> run any Kane test and check what the page did: requests, data leaving
+                                  the site, cookies, errors, numbers (rules in the test file; --fix to repair)
   skill [--project]               install the agent skill: Claude Code runs Statute after risky changes
   hook                            Claude Code Stop hook: no "done" until Kane passes
   mcp                             MCP server: gives any agent a statute_check tool
@@ -284,6 +305,7 @@ async function main() {
   if (cmd === "mcp") return require("./mcp.js");
   if (cmd === "hook") return require("./hook.js");
   if (cmd === "replay") return replay(packId);
+  if (cmd === "expect") process.exit(await require("../src/expect-cli").main(process.argv.slice(3), { arg, latestPack, writableBase }));
   if (cmd === "report") {
     const html = page.build({ out: path.resolve(arg("out", "statute-report")), packs: PACKS });
     console.log(`Case file: ${html}`);

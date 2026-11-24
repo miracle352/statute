@@ -112,6 +112,14 @@ function windowed(pack, items, when, stepName) {
   }
   if (step.end == null) return { error: `Kane recorded no actions in "${step.label}", so there is no moment to measure from` };
   const after = when.toLowerCase() === "after";
+  if (after) {
+    // "After a refusal" only means something if Kane finished the refusal, and
+    // only proves something if Kane kept recording after it.
+    const broke = step.section && step.section.actions.find((a) => /error|fail/i.test(a.status || "") && (a.type === "child_agent_end" || a === step.section.actions[step.section.actions.length - 1]));
+    if (broke) return { error: `Kane didn't finish "${step.label}" (${(broke.instruction || broke.intent || broke.type).slice(0, 80)} ended in an error), so what came after it can't be judged` };
+    const later = [...pack.actions, ...pack.requests].some((x) => x.time != null && x.time > step.end);
+    if (!later) return { error: `Kane recorded nothing after "${step.label}", so there is nothing to judge` };
+  }
   return { items: items.filter((x) => x.time != null && (after ? x.time > step.end : x.time < step.end)), scope: `${after ? "after" : "before"} "${step.label}"` };
 }
 

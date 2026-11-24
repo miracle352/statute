@@ -208,3 +208,18 @@ test("a partial refusal (advertising only) is not read as refusing everything", 
   const p = pack({ sections: [{ title: "Open", actions: [{ type: "navigate", params: { url: "https://shop.example.com/" }, at: 0 }, { type: "click", instruction: "Clicking Decline Advertising Cookies", at: 2 }], requests: [] }] });
   assert.ok(!infer(p).some((r) => /tracker/.test(r.rule)));
 });
+
+test("after a step Kane didn't finish, or with nothing recorded after it, nothing is proven", () => {
+  const broken = pack({ sections: [
+    { title: "Refuse cookies", actions: [{ type: "navigate", params: { url: "https://news.example.com/" }, at: 0 }, { type: "click", instruction: "Clicking Manage", at: 5 }, { type: "child_agent_end", status: "error", instruction: "switch off every purpose", at: 40 }],
+      requests: [{ url: "https://news.example.com/", at: 0 }] },
+  ] });
+  assert.equal(one(broken, 'no request to a tracker after "Refuse cookies"').status, "unknown");
+  const silent = pack({ sections: [
+    { title: "Refuse cookies", actions: [{ type: "navigate", params: { url: "https://news.example.com/" }, at: 0 }, { type: "click", instruction: "Clicking Reject all", at: 5 }],
+      requests: [{ url: "https://news.example.com/", at: 0 }] },
+  ] });
+  const r = one(silent, 'no request to a tracker after "Refuse cookies"');
+  assert.equal(r.status, "unknown");
+  assert.match(r.detail, /recorded nothing after/);
+});

@@ -2,6 +2,16 @@
 
 [![Tests](https://github.com/miracle352/statute/actions/workflows/test.yml/badge.svg)](https://github.com/miracle352/statute/actions/workflows/test.yml)
 
+**Kane says the steps ran. Statute shows what the page did.**
+
+| In 60 seconds | |
+|---|---|
+| See it, in the browser | [statute-production.up.railway.app/judge.html](https://statute-production.up.railway.app/judge.html): a Kane test that passed while the visitor's email went to Google Analytics, replayed from Kane's evidence. Drop in your own `.evidence` file too. |
+| Run it, no account, no credits | `npx @miracle352/statute demo` re-judges 16 recorded Kane runs on your machine |
+| Use it on your tests | `npx @miracle352/statute expect your_test.md --url https://your-site.com` (needs [Kane CLI](https://www.npmjs.com/package/@testmuai/kane-cli)). No expectations written? Statute works them out from what Kane did. |
+
+Everything below is the proof: real sites, real pull requests, and the laws it checks.
+
 **Your agent's code works. Is it legal?**
 
 Ask Claude Code to "add Google Analytics" and it will usually add a cookie banner too, and tell you cookies are "only set if you accept". Is that true? Paste Google's own tag the way its setup page says, and analytics fires before anyone is asked. Either way the site works and every functional test passes, and nobody has checked the one thing the law cares about. Statute is the check your agent can't skip: Kane CLI opens your app in a real Chrome, clicks Reject, reads the checkout, tries to cancel, and records everything. Code, not a model, judges Kane's sealed evidence against the law. On a violation the report goes back to your agent, and Kane returns to prove the fix. A fix only counts when Kane says so.

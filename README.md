@@ -32,7 +32,7 @@ Built for the [Kane CLI Online Hackathon](https://www.kaneclihack.sh/) (12 to 19
 | **Bar 2: Kane caught or proved something** | On strangers' live sites: [7 of 15 big European sites](https://statute-production.up.railway.app/#census) tracked visitors without consent; [cruisinginthewake.com](https://statute-production.up.railway.app/cases/in-the-wake.html) tracks before any choice; [HAXCMS](https://statute-production.up.railway.app/cases/haxcms.html) loaded Analytics with no way to refuse; on [3 of 8 online pharmacies](#expectations-for-any-kane-test), a "pregnancy test" search reached an ad or marketing company, twice after refusing cookies. Kane also had a recording gap, now [reported upstream](https://github.com/LambdaTest/kane-cli/issues) |
 | **Bar 3: agent and Kane talk to each other** | [miracle352/lumen#2](https://github.com/miracle352/lumen/pull/2): Kane's report went to Claude Code, which fixed the code and said "I haven't re-run Kane"; Kane then proved Decline and Accept, and Statute pushed the fix to the pull request |
 | **Ships** | A [live site](https://statute-production.up.railway.app) that audits your URL, a [GitHub Action](#use-it-in-ci) with `npx github:miracle352/statute init`, a [page that judges any Kane evidence pack](https://statute-production.up.railway.app/judge.html), a nightly production watch, a Claude Code hook and [agent skill](skill/statute/SKILL.md), an MCP server, and the laws as [Kane CLI test files](laws/) |
-| **Verified** | Verdicts are code over Kane's sealed evidence, never a model's opinion. 66 tests, including a golden test that re-judges 16 real recorded Kane runs on every commit. A check that can't prove anything says so ("not judged") instead of passing |
+| **Verified** | Verdicts are code over Kane's sealed evidence, never a model's opinion. 69 tests, including a golden test that re-judges 16 real recorded Kane runs on every commit. A check that can't prove anything says so ("not judged") instead of passing |
 | **Closed loop** | Three places: in CI (the Action fixes and pushes only what Kane passed), in Claude Code (its Stop hook won't let the agent finish until Kane passes), and live on the [loop page](https://statute-production.up.railway.app/loop.html) |
 | **Craft** | No tests to write: the laws are the tests. One command to add it to a repo. A pull request that touches only styles or docs costs 0 credits. Kane's screenshots right in the PR comment |
 
@@ -121,6 +121,8 @@ npx github:miracle352/statute expect .testmuai/evidence/<run>.evidence
 | `no server errors`, `no failed requests to this site`, `no console errors` | failures behind a page that looks fine (favicon noise ignored) |
 | `value $<a> equals \| is at most \| is at least $<b> [plus $<c>]` | numbers Kane stored, compared exactly: price shown against total charged |
 | `clicks in "<step>" at most clicks in "<step>" [plus <n>]` | effort: cancelling against subscribing |
+
+**No expectations written? Statute writes them, with code, from what Kane did.** Where Kane typed, it adds `what was typed in "<step>" never leaves this site`; where Kane clicked Reject, Decline or Refuse (in 11 languages; "decline advertising cookies" doesn't count as refusing everything), it adds no tracker request, visitor ID or tracker cookie after that click; and every run gets `no server errors`. So any Kane test or pack you already have can be checked as it is, and Statute prints the rules so you can paste them into the test. On the 19 packs we have here, the inferred rules caught the same leaks as the hand-written ones, including the pharmacy search that went to an ad company after "Weigeren".
 
 Steps are your test's `## headings`; "after" and "before" are measured from the last thing Kane did in that step. A rule Statute can't check from the evidence (a missing step, an unknown rule, no network log) is reported as *not checked*, never as a pass. Kane records network traffic while a step runs, not in the gaps between steps, so a tag that fires a few seconds after a page loads can fall into a gap and go unrecorded; a fast replay from Kane's step cache makes this more likely. Statute checks for it: unless Kane recorded at least 6 seconds of traffic after the last page load, a clean network result is reported as *not checked*, with the fix (end the step that loads the page with a wait). Exit codes are 0, 1 and 3, and a verdict in Kane's own format (the `evidence-cli` verdict schema that `kane-cli evidence verdict` writes) is saved next to the pack as `<pack>.verdicts/statute.verdict.json`.
 
@@ -278,7 +280,7 @@ Guard rails: public `http`/`https` sites only (private, internal and metadata ad
 Node 22, [Kane CLI](https://www.npmjs.com/package/@testmuai/kane-cli) (`npm i -g @testmuai/kane-cli && kane-cli login`), and Claude Code for the fix loop. No npm install: Statute has no dependencies.
 
     npm run demo              replay recorded runs, no credits
-    npm test                  66 tests: every judge, the diff check, and a golden test that
+    npm test                  69 tests: every judge, the diff check, and a golden test that
                               re-judges the 16 recorded Kane runs and fails if a verdict changes
     npm start                 the site on http://localhost:8080, live audits included
     npm run check:consent     one Reject check on the demo shop
@@ -308,7 +310,7 @@ To host it: the `Dockerfile` installs Chrome and Kane CLI. Set `LT_USERNAME` and
     bin/shots.js         pulls Kane's key screenshots out of the evidence for PR comments
     laws/                the three laws as Kane CLI test files (kane-cli testmd run)
     skill/statute/       the agent skill (statute skill)
-    test/                66 tests, including a golden test over 16 recorded Kane runs
+    test/                69 tests, including a golden test over 16 recorded Kane runs
     bin/census.js        the Census runner, --rejudge
     server/              the live site, audit queue, Chrome and its live view
     demo-store/          Lumen, a shop with deliberate compliance bugs

@@ -7,6 +7,7 @@ const crypto = require("crypto");
 const { spawn } = require("child_process");
 const packReader = require("./pack");
 const expect = require("./expect");
+const { infer } = require("./infer");
 const kane = require("./kane");
 const app = require("./app");
 const agent = require("./agent");
@@ -70,6 +71,7 @@ function reportMd(judged, { testName, packPath, kaneStatus, shareLink }) {
   const L = [];
   L.push(`## Statute: ${judged.verdict.toUpperCase()}${testName ? ` · ${testName}` : ""}`, "");
   L.push(`Kane's own result: ${kaneStatus || "unknown"} (that only says the steps ran). Statute checked what the page did, from Kane's sealed evidence${judged.site ? ` on ${judged.site}` : ""}:`, "");
+  if (judged.inferred) L.push("The test had no expectations, so Statute wrote them from what Kane did (where it typed, where it refused cookies).", "");
   L.push("| | Expectation | What Kane recorded |", "|---|---|---|");
   for (const r of judged.results) L.push(`| ${ICON[r.status]} | ${r.rule.replace(/\|/g, "\\|")} | ${r.detail.replace(/\|/g, "\\|")} |`);
   L.push("");
@@ -144,8 +146,14 @@ function judgePack(packPath, { rulesFile, testName, kaneStatus } = {}) {
   const pack = packReader.read(packPath);
   let rules = pack.expectations;
   if (rulesFile) rules = fs.readFileSync(rulesFile, "utf8").split(/\r?\n/).map((l) => l.replace(/^\s*[-*]\s+/, "").trim()).filter((l) => l && !l.startsWith("#"));
-  if (!rules.length) throw Object.assign(new Error("This test has no expectations. Add them to the test file:\n\n<!-- expect\n- no request to a tracker after \"<step heading>\"\n-->\n\nor pass --rules <file>. See: statute expect --help"), { code: 2 });
+  let inferred = null;
+  if (!rules.length) {
+    // No expectations written: work them out from what Kane did.
+    inferred = infer(pack);
+    rules = inferred.map((r) => r.rule);
+  }
   const judged = expect.judge(pack, rules);
+  judged.inferred = inferred;
   const md = reportMd(judged, { testName: testName || (pack.testMd && (pack.testMd.match(/^#\s+(.+)$/m) || [])[1]), packPath, kaneStatus: kaneStatus || pack.kaneStatus, shareLink: pack.shareLink });
   const verdictFile = writeVerdict(packPath, rules, judged);
   return { judged, md, verdictFile, rules, pack };
@@ -153,6 +161,11 @@ function judgePack(packPath, { rulesFile, testName, kaneStatus } = {}) {
 
 function print(judged, verdictFile) {
   console.log("");
+  if (judged.inferred) {
+    console.log("This test has no expectations, so Statute wrote these from what Kane did.\nTo keep them, paste this into the test file:\n\n<!-- expect");
+    for (const r of judged.inferred) console.log(`- ${r.rule}`);
+    console.log("-->\n");
+  }
   for (const r of judged.results) console.log(`  ${ICON[r.status]}  ${r.rule}\n        ${r.detail}`);
   console.log(`\n${judged.verdict.toUpperCase()}: ${judged.why}`);
   if (judged.kaneStatus) console.log(`(Kane's own result for the same run: ${judged.kaneStatus}.)`);
@@ -166,7 +179,9 @@ const HELP = `statute expect: check what the page did while Kane ran your test.
   statute expect <pack.evidence> | --latest            judge a sealed pack again, no credits
   options: --rules <file>  --out <dir>  --json
 
-Write expectations in the test file, in a comment Kane ignores:
+No expectations in the test? Statute writes them from what Kane did: what was
+typed never leaves the site, nothing tracks after a refusal, no server errors.
+Or write your own in the test file, in a comment Kane ignores:
 
   <!-- expect
   - no request to a tracker after "Refuse cookies"
@@ -215,7 +230,6 @@ async function main(argv, { arg, latestPack, writableBase }) {
   if (!url || url === true) { console.error("--url is required to run the test"); return 2; }
   const start = arg("start") === true ? null : arg("start", null);
   const testText = fs.readFileSync(target, "utf8");
-  if (!rulesFile && !packReader.expectations(testText).length) { console.error(`${target} has no expectations yet.\n\n${HELP}`); return 2; }
   if (!kane.available()) { console.error("Statute needs Kane CLI: npm install -g @testmuai/kane-cli, then kane-cli login"); return 3; }
   const testName = (testText.match(/^#\s+(.+)$/m) || [])[1] || path.basename(target);
   const fixing = !!arg("fix");

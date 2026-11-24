@@ -184,3 +184,27 @@ test("a search term sent as form encoding inside a tag's own URL still counts", 
   assert.equal(r.evidence[0].host, "www.facebook.com");
   assert.equal(r.evidence[0].how, "URL-encoded");
 });
+
+test("no expectations written: Statute works them out from what Kane did", () => {
+  const { infer } = require("../src/infer");
+  const rep = (n, f) => packReader.read(path.join(__dirname, "..", "replays", n, "evidence", f));
+  // A plain kane-cli run that refused cookies ("Rejecting all cookies…"), on the buggy shop.
+  const shop = rep("demo-shop", "consent-1794751413210.evidence");
+  const rules = infer(shop).map((r) => r.rule);
+  assert.ok(rules.includes('no request to a tracker after "Rejecting all cookies in the cookie banner"'));
+  assert.equal(expect.judge(shop, rules).verdict, "violation");
+  // A test that typed an email: the typed rule is inferred and catches the leak.
+  const news = rep("newsletter-expect", "newsletter_test-round1-1795518837738.evidence");
+  const nr = infer(news).map((r) => r.rule);
+  assert.ok(nr.includes('what was typed in "Sign up for the newsletter" never leaves this site'));
+  assert.equal(expect.judge(news, nr).verdict, "violation");
+  // Accepting cookies infers no tracker rule.
+  const accept = rep("demo-shop", "consent-accept-1794751588395.evidence");
+  assert.ok(!infer(accept).some((r) => /tracker/.test(r.rule)));
+});
+
+test("a partial refusal (advertising only) is not read as refusing everything", () => {
+  const { infer } = require("../src/infer");
+  const p = pack({ sections: [{ title: "Open", actions: [{ type: "navigate", params: { url: "https://shop.example.com/" }, at: 0 }, { type: "click", instruction: "Clicking Decline Advertising Cookies", at: 2 }], requests: [] }] });
+  assert.ok(!infer(p).some((r) => /tracker/.test(r.rule)));
+});

@@ -184,6 +184,7 @@
             <span><i class="lg-trk"></i>Tracker</span>
             <span><i class="lg-bad"></i>Broke an expectation</span>
             <span>▲ Page load</span>
+            <span>┆ Kane refused cookies</span>
           </div>
         </div>
         <div class="scroller"><svg id="svg" viewBox="0 0 1000 205" role="img" aria-label="Timeline of the run"></svg></div>
@@ -252,7 +253,7 @@
     const k = String(d.kaneStatus || "unknown");
     $("kane").textContent = WORD[k] || k;
     $("kane").className = "vword " + (k === "passed" ? "pass" : k === "failed" ? "violation" : "");
-    $("test").textContent = (d.test.title || fileName || "") + (d.rulesFrom === "default" ? " · no expectations in this test, so basic ones are used" : "");
+    $("test").textContent = (d.test.title || fileName || "") + (d.rulesFrom === "inferred" ? ". This test had no expectations, so Statute wrote them from what Kane did" : "");
     $("verdict").textContent = WORD[d.verdict] || d.verdict;
     $("verdict").className = "vword " + d.verdict;
     $("why").textContent = d.why;
@@ -338,6 +339,13 @@
 
     // Requests
     const base = 150;
+    for (const rf of v.refusals || []) {
+      const g = s("g", {});
+      g.append(s("line", { x1: x(rf.t), x2: x(rf.t), y1: bandY + bandH + 4, y2: base, stroke: "rgba(255,255,255,.8)", "stroke-dasharray": "3 3" }));
+      g.append(s("text", { x: x(rf.t) + 6, y: bandY + bandH + 16, fill: "rgba(255,255,255,.85)", "font-size": 12, "font-family": "Geist, system-ui, sans-serif" }, "Kane refused cookies"));
+      g.append(s("title", {}, rf.text));
+      svg.append(g);
+    }
     svg.append(s("line", { x1: L, x2: R, y1: base, y2: base, stroke: "rgba(255,255,255,.16)" }));
     for (const ld of v.loads) {
       const g = s("g", {});
@@ -361,7 +369,7 @@
       g.append(s("line", { x1: cx, x2: cx, y1: base, y2: top, stroke: "#ff6159", "stroke-width": 2.5 }));
       g.append(s("circle", { cx, cy: top, r: 6, fill: "#ff6159" }));
       if (i === 0) {
-        const txt = `${r.flagged.value || "broke an expectation"} → ${r.host}`;
+        const txt = r.flagged.value ? `${r.flagged.value} → ${r.host}` : `${r.host}${flagged.length > 1 ? ` and ${flagged.length - 1} more` : ""}`;
         const right = cx > W * 0.62;
         g.append(s("text", { x: right ? cx - 12 : cx + 12, y: top + 4, fill: "#ffb4af", "font-size": 13, "text-anchor": right ? "end" : "start", "font-family": "JetBrains Mono, ui-monospace, monospace" }, txt));
       }

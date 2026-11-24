@@ -4,6 +4,7 @@ const path = require("path");
 const pack = require("../src/pack");
 const expect = require("../src/expect");
 const { view } = require("../src/expect-view");
+const { infer } = require("../src/infer");
 
 const MAX_BYTES = 30 * 1024 * 1024;
 const PER_HOUR = 60;
@@ -11,7 +12,6 @@ const SAMPLES = {
   before: path.join(__dirname, "..", "replays", "newsletter-expect", "evidence", "newsletter_test-round1-1795518837738.evidence"),
   after: path.join(__dirname, "..", "replays", "newsletter-expect", "evidence", "newsletter_test-round2-1795519079029.evidence"),
 };
-const DEFAULT_RULES = ["no server errors", "no failed requests to this site", "no console errors"];
 
 const hits = new Map();
 function allowed(ip) {
@@ -70,13 +70,14 @@ async function handle(req, res, { sendJson, ip }) {
     return sendJson(res, e.code || 400, { error: e.code ? e.message : "Couldn't read that request." });
   }
   const own = p.expectations.length ? p.expectations : null;
-  const used = rules || own || DEFAULT_RULES;
+  const inferred = rules || own ? null : infer(p);
+  const used = rules || own || inferred.map((r) => r.rule);
   const judged = expect.judge(p, used);
   sendJson(res, 200, {
     source,
     test: { title: (String(p.testMd || "").match(/^#\s+(.+)$/m) || [])[1] || null, steps: p.titles },
     rules: used,
-    rulesFrom: rules ? "edited" : own ? "test" : "default",
+    rulesFrom: rules ? "edited" : own ? "test" : "inferred",
     kaneStatus: judged.kaneStatus,
     verdict: judged.verdict,
     why: judged.why,

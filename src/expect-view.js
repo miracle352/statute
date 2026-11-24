@@ -2,6 +2,7 @@
 // window, the gaps Kane didn't record, every request (site, tracker or other
 // host), page loads, and which requests broke an expectation.
 const expect = require("./expect");
+const { REFUSE, PARTIAL } = require("./infer");
 
 const MAX_REQUESTS = 2500;
 
@@ -65,10 +66,13 @@ function view(pack, judged) {
     if (b - a > 500) gaps.push({ from: a, to: b });
   }
   const early = expect.settle(pack);
+  const refusals = pack.actions
+    .filter((a) => a.time && /click|tap|press/i.test(a.type || "") && REFUSE.test(a.instruction || "") && !PARTIAL.test(a.instruction || ""))
+    .map((a) => ({ t: rel(a.time), text: a.instruction.slice(0, 100) }));
 
   return {
     duration: end - t0, home, steps, requests, truncated: pack.requests.length > MAX_REQUESTS,
-    loads, gaps, settle: early ? { recorded: early.gap, needed: expect.SETTLE_MS, path: pathOf(early.url) } : null,
+    loads, gaps, refusals, settle: early ? { recorded: early.gap, needed: expect.SETTLE_MS, path: pathOf(early.url) } : null,
   };
 }
 

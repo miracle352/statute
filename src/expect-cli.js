@@ -229,7 +229,7 @@ async function main(argv, { arg, latestPack, writableBase }) {
     if (start) {
       child = app.start(start, process.cwd());
       if (!(await app.waitUntilUp(url))) { app.stop(child); console.error(`The app did not come up at ${url} after "${start}"`); return 3; }
-    } else if (!(await app.ping(url))) { console.error(`Nothing is answering at ${url}; start the app or pass --start "<command>"`); return 3; }
+    } else if (/^https?:\/\/(localhost|127\.|\[::1\])/i.test(url) && !(await app.ping(url))) { console.error(`Nothing is answering at ${url}; start the app or pass --start "<command>"`); return 3; }
     let res;
     try {
       console.log(`\nStatute · ${testName}${fixing ? ` · round ${round}` : ""}\nKane is running ${path.basename(target)} against ${url}...`);

@@ -148,18 +148,38 @@ function forms(value) {
   return out.filter((f, i, a) => a.findIndex((g) => g.needle === f.needle) === i);
 }
 
+// A request as sent, then decoded up to three times ("+" read as a space, the
+// way forms encode it): tags often wrap a page URL inside their own, so a
+// search for "pregnancy test" arrives as pregnancy%252Btest.
+function decodedLayers(raw) {
+  const dec = (u) => u.replace(/(%[0-9a-f]{2})+/gi, (m) => { try { return decodeURIComponent(m); } catch { return m; } });
+  const out = [raw.toLowerCase()];
+  let cur = raw;
+  for (let i = 0; i < 3; i++) {
+    const next = dec(cur.replace(/\+/g, " "));
+    if (next === cur) break;
+    out.push(next.toLowerCase());
+    cur = next;
+  }
+  return out;
+}
+
 function leaks(pack, values) {
   const home = homeSite(pack);
   const found = [];
   for (const r of pack.requests) {
     const host = hostOf(r.url);
     if (!host || site(host) === home) continue;
-    let hay = `${r.url} ${r.body || ""}`.toLowerCase();
-    try { hay += " " + decodeURIComponent(r.url).toLowerCase(); } catch {}
+    const layers = decodedLayers(`${r.url} ${r.body || ""}`);
+    let hit = null;
     for (const v of values) {
-      const hit = forms(v).find((f) => hay.includes(f.needle));
-      if (hit) { found.push({ host, url: short(r.url), time: r.iso, how: hit.how, value: v }); break; }
+      for (let i = 0; i < layers.length && !hit; i++) {
+        const f = forms(v).find((x) => layers[i].includes(x.needle));
+        if (f) hit = { how: i && f.how === "as typed" ? "URL-encoded" : f.how, value: v };
+      }
+      if (hit) break;
     }
+    if (hit) found.push({ host, url: short(r.url), time: r.iso, how: hit.how, value: hit.value });
   }
   return { home, found };
 }

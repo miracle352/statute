@@ -171,3 +171,16 @@ test("judge API: a sample is judged, junk is refused, nothing is kept", async ()
   const junk = await call("not a zip at all, just some text here", { "content-type": "application/octet-stream" });
   assert.equal(junk.code, 400);
 });
+
+test("a search term sent as form encoding inside a tag's own URL still counts", () => {
+  const p = pack({ sections: [
+    { title: "Open", actions: [{ type: "navigate", params: { url: "https://shop.example.com/" }, at: 0 }], requests: [{ url: "https://shop.example.com/", at: 0 }] },
+    { title: "Search the site", actions: [{ type: "fill", params: { value: "pregnancy test" }, at: 2 }, { type: "wait", at: 20 }],
+      requests: [{ url: "https://shop.example.com/search?q=pregnancy+test", at: 3 },
+        { url: "https://www.facebook.com/tr/?id=1&ev=PageView&dl=https%3A%2F%2Fshop.example.com%2Fsearch%3Fq%3Dpregnancy%252Btest", at: 6 }] },
+  ] });
+  const r = one(p, 'what was typed in "Search the site" never leaves this site');
+  assert.equal(r.status, "fail");
+  assert.equal(r.evidence[0].host, "www.facebook.com");
+  assert.equal(r.evidence[0].how, "URL-encoded");
+});
